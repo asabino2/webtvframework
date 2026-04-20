@@ -5,13 +5,11 @@
   const table = document.getElementById('blocks-table');
   const body = document.getElementById('blocks-body');
   const empty = document.getElementById('blocks-empty');
-  const languageSelect = document.getElementById('blocks-language-select');
 
   const LANG_KEY = 'webtv_lang';
   const i18n = {
     pt: {
       title: 'Bloqueios Regionais',
-      languageLabel: 'Idioma',
       blocksTitle: 'Bloqueios Regionais de Atracoes',
       blocksSubtitle: 'Defina regras para impedir a transmissao conforme pais, estado e cidade da audiencia.',
       labelAttraction: 'Atracao (trecho do titulo no EPG)',
@@ -43,7 +41,6 @@
     },
     en: {
       title: 'Regional Blocking',
-      languageLabel: 'Language',
       blocksTitle: 'Regional Program Blocking',
       blocksSubtitle: 'Define rules to block broadcasts by audience country, state and city.',
       labelAttraction: 'Program (title snippet from EPG)',
@@ -93,7 +90,6 @@
       if (el) el.textContent = value;
     };
 
-    setText('blocks-language-label', t('languageLabel'));
     setText('blocks-title', t('blocksTitle'));
     setText('blocks-subtitle', t('blocksSubtitle'));
     setText('label-attraction', t('labelAttraction'));
@@ -114,18 +110,6 @@
     form.states.placeholder = t('phStates');
     form.cities.placeholder = t('phCities');
     form.reason.placeholder = t('phReason');
-  }
-
-  function initLanguageControl() {
-    if (!languageSelect) return;
-    languageSelect.value = currentLang;
-    languageSelect.addEventListener('change', () => {
-      currentLang = languageSelect.value === 'en' ? 'en' : 'pt';
-      window.localStorage.setItem(LANG_KEY, currentLang);
-      applyStaticTranslations();
-      applyChannelName();
-      loadBlocks().catch(() => {});
-    });
   }
 
   async function applyChannelName() {
@@ -240,7 +224,6 @@
   });
 
   applyStaticTranslations();
-  initLanguageControl();
   applyChannelName();
   loadBlocks().catch(err => {
     console.error('[BLOCKS] Falha ao carregar bloqueios:', err);

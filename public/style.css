@@ -99,20 +99,6 @@ html, body {
 .btn-epg:hover  { background: #f5b535; }
 .btn-epg:active { transform: scale(.97); }
 
-.lang-switch {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.lang-select {
-  background: var(--surface2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  height: 34px;
-  padding: 0 10px;
-}
-
 /* ── Main Layout ────────────────────────────────────────────────────────── */
 .main-layout {
   max-width: 1400px;

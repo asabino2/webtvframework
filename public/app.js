@@ -24,7 +24,6 @@
   const logoChannelName = document.getElementById('logo-channel-name');
   const appVersionLine = document.getElementById('app-version-line');
   const appAuthorLine = document.getElementById('app-author-line');
-  const languageSelect = document.getElementById('language-select');
 
   const btnEpg        = document.getElementById('btn-epg');
   const epgOverlay    = document.getElementById('epg-overlay');
@@ -186,7 +185,7 @@
   let heartbeatTimer = null;
   let liveTimer = null;
   let channelName = 'Webtv framework';
-  let appVersion = '0.0.1';
+  let appVersion = '0.0.2';
 
   function updateDocumentTitle() {
     document.title = `${channelName} — ${t('titleLive')}`;
@@ -202,7 +201,6 @@
     };
 
     setText('live-badge-text', t('live'));
-    setText('language-label', t('languageLabel'));
     setText('btn-epg-text', t('epgButton'));
     setText('player-loading-text', t('loadingBroadcast'));
     setText('error-msg', t('streamUnavailable'));
@@ -232,21 +230,6 @@
     if (btnCast) btnCast.title = t('cast');
 
     updateDocumentTitle();
-  }
-
-  function initLanguageControl() {
-    if (!languageSelect) return;
-    languageSelect.value = currentLang;
-    languageSelect.addEventListener('change', () => {
-      const selected = languageSelect.value === 'en' ? 'en' : 'pt';
-      currentLang = selected;
-      window.localStorage.setItem(LANG_KEY, currentLang);
-      applyStaticTranslations();
-      updateSidebarEpg();
-      if (epgLoaded) {
-        renderEpgGrid(epgGridData);
-      }
-    });
   }
 
   async function loadPublicConfig() {
@@ -845,7 +828,6 @@
 
   // ── Inicializa ────────────────────────────────────────────────────────────
   applyStaticTranslations();
-  initLanguageControl();
 
   loadPublicConfig().finally(() => {
     applyStaticTranslations();

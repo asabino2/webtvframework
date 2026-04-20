@@ -119,6 +119,11 @@
       applyStaticTranslations();
       setView(getCurrentView());
       setChannelName(channelNameEl.textContent || 'Webtv framework');
+      try {
+        frame.contentWindow?.location.reload();
+      } catch (_) {
+        // Ignora falhas ocasionais de recarregamento do iframe.
+      }
     });
   }
 

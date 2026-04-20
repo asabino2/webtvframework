@@ -17,30 +17,7 @@
     }
 
     .blocks-top-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .blocks-language-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .blocks-language-row label {
-      font-size: 0.85rem;
-      color: #d9dde4;
-    }
-
-    .blocks-language-row select {
-      background: rgba(0, 0, 0, 0.28);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      border-radius: 10px;
-      color: #fff;
-      padding: 8px 10px;
-      font: inherit;
+      display: block;
     }
 
     .blocks-header h1 {
@@ -142,11 +119,6 @@
     }
 
     @media (max-width: 780px) {
-      .blocks-top-row {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
       .blocks-form {
         grid-template-columns: 1fr;
       }
@@ -161,16 +133,7 @@
 <body>
   <main class="blocks-page">
     <header class="blocks-header">
-      <div class="blocks-top-row">
-        <h1 id="blocks-title">Bloqueios Regionais de Atracoes</h1>
-        <div class="blocks-language-row">
-          <label for="blocks-language-select" id="blocks-language-label">Idioma</label>
-          <select id="blocks-language-select" aria-label="Selecionar idioma">
-            <option value="pt">Portugues</option>
-            <option value="en">English</option>
-          </select>
-        </div>
-      </div>
+      <div class="blocks-top-row"><h1 id="blocks-title">Bloqueios Regionais de Atracoes</h1></div>
       <p class="muted" id="blocks-subtitle">Defina regras para impedir a transmissao conforme pais, estado e cidade da audiencia.</p>
     </header>
 

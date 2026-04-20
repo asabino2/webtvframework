@@ -12,14 +12,12 @@
   const topOs = document.getElementById('top-os');
   const topCountries = document.getElementById('top-countries');
   const topCities = document.getElementById('top-cities');
-  const languageSelect = document.getElementById('stats-language-select');
 
   const LANG_KEY = 'webtv_lang';
   const i18n = {
     pt: {
       titleStats: 'Estatisticas',
       kicker: 'Painel interno',
-      languageLabel: 'Idioma',
       mainTitle: 'Estatisticas da transmissao',
       subtitle: 'Visao em tempo real da audiencia, distribuicao de acessos e visitas recentes.',
       metricCurrent: 'Assistindo agora',
@@ -52,7 +50,6 @@
     en: {
       titleStats: 'Statistics',
       kicker: 'Internal panel',
-      languageLabel: 'Language',
       mainTitle: 'Broadcast statistics',
       subtitle: 'Real-time audience view, access distribution, and recent visits.',
       metricCurrent: 'Watching now',
@@ -106,7 +103,6 @@
     };
 
     setText('stats-kicker', t('kicker'));
-    setText('stats-language-label', t('languageLabel'));
     setText('stats-main-title', t('mainTitle'));
     setText('stats-subtitle', t('subtitle'));
     setText('metric-label-current', t('metricCurrent'));
@@ -137,18 +133,6 @@
     if (updatedAt && !updatedAt.textContent) {
       updatedAt.textContent = t('updating');
     }
-  }
-
-  function initLanguageControl() {
-    if (!languageSelect) return;
-    languageSelect.value = currentLang;
-    languageSelect.addEventListener('change', () => {
-      currentLang = languageSelect.value === 'en' ? 'en' : 'pt';
-      window.localStorage.setItem(LANG_KEY, currentLang);
-      applyChannelName();
-      applyStaticTranslations();
-      loadSummary().catch(console.error);
-    });
   }
 
   async function applyChannelName() {
@@ -237,7 +221,6 @@
   }
 
   applyStaticTranslations();
-  initLanguageControl();
   applyChannelName();
   loadSummary().catch(console.error);
   setInterval(() => loadSummary().catch(console.error), 10000);
