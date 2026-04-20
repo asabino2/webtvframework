@@ -34,6 +34,33 @@ body {
   margin-bottom: 28px;
 }
 
+.stats-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.stats-language-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stats-language-row label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stats-language-row select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font: inherit;
+}
+
 .stats-kicker {
   margin: 0 0 10px;
   color: var(--accent);
@@ -238,6 +265,11 @@ td {
 }
 
 @media (max-width: 760px) {
+  .stats-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .stats-grid-top,
   .stats-grid-main,
   .panel-card.wide {

@@ -99,6 +99,20 @@ html, body {
 .btn-epg:hover  { background: #f5b535; }
 .btn-epg:active { transform: scale(.97); }
 
+.lang-switch {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.lang-select {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  height: 34px;
+  padding: 0 10px;
+}
+
 /* ── Main Layout ────────────────────────────────────────────────────────── */
 .main-layout {
   max-width: 1400px;
@@ -127,6 +141,39 @@ html, body {
 .app-footer p:first-child {
   color: var(--text);
   font-weight: 600;
+}
+
+#app-repo-line {
+  margin-top: 6px;
+}
+
+#app-repo-line a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 160, 32, 0.45);
+  background: rgba(232, 160, 32, 0.1);
+  color: #f6c76a;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .2s, border-color .2s, color .2s, transform .1s;
+}
+
+#app-repo-line a:hover {
+  background: rgba(232, 160, 32, 0.18);
+  border-color: rgba(232, 160, 32, 0.75);
+  color: #ffda94;
+}
+
+#app-repo-line a:active {
+  transform: translateY(1px);
+}
+
+#app-repo-line a:focus-visible {
+  outline: 2px solid rgba(232, 160, 32, 0.65);
+  outline-offset: 2px;
 }
 
 /* ── Player ─────────────────────────────────────────────────────────────── */

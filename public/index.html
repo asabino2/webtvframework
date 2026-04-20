@@ -19,8 +19,13 @@
         <span class="logo-text"><span id="logo-channel-name">Webtv framework</span></span>
       </div>
       <div class="live-badge">
-        <span class="live-dot"></span> AO VIVO
+        <span class="live-dot"></span> <span id="live-badge-text">AO VIVO</span>
       </div>
+      <label class="lang-switch" for="language-select" id="language-label">Idioma</label>
+      <select id="language-select" class="lang-select" aria-label="Selecionar idioma">
+        <option value="pt">Português</option>
+        <option value="en">English</option>
+      </select>
       <button id="btn-epg" class="btn-epg">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -29,7 +34,7 @@
           <line x1="8" y1="2" x2="8" y2="6"></line>
           <line x1="3" y1="10" x2="21" y2="10"></line>
         </svg>
-        Grade de Programação
+        <span id="btn-epg-text">Grade de Programação</span>
       </button>
     </div>
   </header>
@@ -99,7 +104,7 @@
         <!-- Spinner de loading -->
         <div class="player-loading" id="player-loading">
           <div class="spinner"></div>
-          <p>Carregando transmissão…</p>
+          <p id="player-loading-text">Carregando transmissão…</p>
         </div>
 
         <!-- Mensagem de erro -->
@@ -118,7 +123,7 @@
       <!-- Programa atual -->
       <div class="program-card current-program">
         <div class="program-card-label">
-          <span class="live-dot small"></span> Agora
+          <span class="live-dot small"></span> <span id="label-now">Agora</span>
         </div>
         <div class="program-card-title" id="current-title">Carregando…</div>
         <div class="program-card-time" id="current-time"></div>
@@ -131,7 +136,7 @@
 
       <!-- Próximo programa -->
       <div class="program-card next-program">
-        <div class="program-card-label next-label">A seguir</div>
+        <div class="program-card-label next-label" id="label-next">A seguir</div>
         <div class="program-card-title" id="next-title">—</div>
         <div class="program-card-time" id="next-time"></div>
         <div class="program-card-desc" id="next-desc"></div>
@@ -139,9 +144,9 @@
       </div>
 
       <div class="program-card audience-program">
-        <div class="program-card-label next-label">Audiência em tempo real</div>
+        <div class="program-card-label next-label" id="label-audience">Audiência em tempo real</div>
         <div class="audience-count" id="viewer-count">0</div>
-        <div class="audience-caption">pessoas assistindo agora</div>
+        <div class="audience-caption" id="audience-caption">pessoas assistindo agora</div>
         <div class="audience-meta" id="viewer-updated-at">Aguardando atualização…</div>
       </div>
     </aside>
@@ -150,20 +155,21 @@
 
   <footer class="app-footer">
     <p id="app-version-line">Webtv Framework - Versão 0.0.1</p>
-    <p>Criado por Alexander Sabino em 2026</p>
+    <p id="app-author-line">Criado por Alexander Sabino em 2026</p>
+    <p id="app-repo-line">Repositório no <a href="https://github.com/asabino2/webtvframework" target="_blank" rel="noopener">GitHub</a></p>
   </footer>
 
   <!-- ── Modal Grade EPG ──────────────────────────────────────────────────── -->
   <div class="epg-overlay" id="epg-overlay">
     <div class="epg-modal">
       <div class="epg-modal-header">
-        <h2>📋 Grade de Programação</h2>
+        <h2 id="epg-modal-title">📋 Grade de Programação</h2>
         <button class="epg-close" id="epg-close">✕</button>
       </div>
       <div class="epg-modal-body" id="epg-grid-body">
         <div class="epg-loading">
           <div class="spinner"></div>
-          <p>Carregando grade…</p>
+          <p id="epg-loading-text">Carregando grade…</p>
         </div>
       </div>
     </div>
@@ -182,7 +188,7 @@
         <div id="epg-detail-subtitle" class="epg-detail-subtitle" style="display:none"></div>
         <div id="epg-detail-category" class="epg-detail-chip" style="display:none"></div>
 
-        <h4 class="epg-detail-section-title">Sinopse</h4>
+        <h4 class="epg-detail-section-title" id="epg-synopsis-title">Sinopse</h4>
         <p id="epg-detail-desc" class="epg-detail-desc"></p>
 
         <div id="epg-detail-extra" class="epg-detail-extra"></div>

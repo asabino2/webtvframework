@@ -16,6 +16,33 @@
       margin-bottom: 20px;
     }
 
+    .blocks-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .blocks-language-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .blocks-language-row label {
+      font-size: 0.85rem;
+      color: #d9dde4;
+    }
+
+    .blocks-language-row select {
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      color: #fff;
+      padding: 8px 10px;
+      font: inherit;
+    }
+
     .blocks-header h1 {
       margin: 0 0 8px;
       font-size: 1.8rem;
@@ -115,6 +142,11 @@
     }
 
     @media (max-width: 780px) {
+      .blocks-top-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
       .blocks-form {
         grid-template-columns: 1fr;
       }
@@ -129,53 +161,62 @@
 <body>
   <main class="blocks-page">
     <header class="blocks-header">
-      <h1>Bloqueios Regionais de Atrações</h1>
-      <p class="muted">Defina regras para impedir a transmissão conforme país, estado e cidade da audiência.</p>
+      <div class="blocks-top-row">
+        <h1 id="blocks-title">Bloqueios Regionais de Atracoes</h1>
+        <div class="blocks-language-row">
+          <label for="blocks-language-select" id="blocks-language-label">Idioma</label>
+          <select id="blocks-language-select" aria-label="Selecionar idioma">
+            <option value="pt">Portugues</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+      <p class="muted" id="blocks-subtitle">Defina regras para impedir a transmissao conforme pais, estado e cidade da audiencia.</p>
     </header>
 
     <section class="blocks-card">
       <form id="block-form" class="blocks-form">
         <div class="field full">
-          <label for="attraction">Atração (trecho do título no EPG)</label>
+          <label for="attraction" id="label-attraction">Atracao (trecho do titulo no EPG)</label>
           <input id="attraction" name="attraction" type="text" required placeholder="Ex.: Campeonato" />
         </div>
 
         <div class="field">
-          <label for="countries">Países (separados por vírgula)</label>
+          <label for="countries" id="label-countries">Paises (separados por virgula)</label>
           <input id="countries" name="countries" type="text" placeholder="Ex.: brasil, argentina" />
         </div>
 
         <div class="field">
-          <label for="states">Estados (separados por vírgula)</label>
+          <label for="states" id="label-states">Estados (separados por virgula)</label>
           <input id="states" name="states" type="text" placeholder="Ex.: sao paulo, rio de janeiro" />
         </div>
 
         <div class="field full">
-          <label for="cities">Cidades (separadas por vírgula)</label>
+          <label for="cities" id="label-cities">Cidades (separadas por virgula)</label>
           <input id="cities" name="cities" type="text" placeholder="Ex.: campinas, sorocaba" />
         </div>
 
         <div class="field full">
-          <label for="reason">Motivo (opcional)</label>
+          <label for="reason" id="label-reason">Motivo (opcional)</label>
           <textarea id="reason" name="reason" placeholder="Ex.: restrição de direitos de transmissão"></textarea>
         </div>
 
         <div class="full">
-          <button class="btn-primary" type="submit">Salvar bloqueio</button>
+          <button class="btn-primary" type="submit" id="btn-save-block">Salvar bloqueio</button>
         </div>
       </form>
     </section>
 
     <section class="blocks-card">
-      <h2>Bloqueios cadastrados</h2>
+      <h2 id="blocks-list-title">Bloqueios cadastrados</h2>
       <div id="blocks-empty" class="empty-state" style="display:none">Nenhum bloqueio cadastrado.</div>
       <table class="blocks-table" id="blocks-table" style="display:none">
         <thead>
           <tr>
-            <th>Atração</th>
-            <th>Região</th>
-            <th>Motivo</th>
-            <th>Ações</th>
+            <th id="th-attraction">Atracao</th>
+            <th id="th-region">Regiao</th>
+            <th id="th-reason">Motivo</th>
+            <th id="th-actions">Acoes</th>
           </tr>
         </thead>
         <tbody id="blocks-body"></tbody>

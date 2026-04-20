@@ -9,71 +9,80 @@
 <body>
   <main class="stats-shell">
     <section class="stats-hero">
-      <p class="stats-kicker">Painel interno</p>
-      <h1>Estatísticas da transmissão</h1>
-      <p class="stats-subtitle">Visão em tempo real da audiência, distribuição de acessos e visitas recentes.</p>
+      <div class="stats-top-row">
+        <p class="stats-kicker" id="stats-kicker">Painel interno</p>
+        <div class="stats-language-row">
+          <label for="stats-language-select" id="stats-language-label">Idioma</label>
+          <select id="stats-language-select" aria-label="Selecionar idioma">
+            <option value="pt">Portugues</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+      <h1 id="stats-main-title">Estatisticas da transmissao</h1>
+      <p class="stats-subtitle" id="stats-subtitle">Visao em tempo real da audiencia, distribuicao de acessos e visitas recentes.</p>
     </section>
 
     <section class="stats-grid stats-grid-top">
       <article class="metric-card emphasis">
-        <span class="metric-label">Assistindo agora</span>
+        <span class="metric-label" id="metric-label-current">Assistindo agora</span>
         <strong class="metric-value" id="metric-current-viewers">0</strong>
         <span class="metric-foot" id="metric-updated">Atualizando…</span>
       </article>
       <article class="metric-card">
-        <span class="metric-label">Visitas totais</span>
+        <span class="metric-label" id="metric-label-total">Visitas totais</span>
         <strong class="metric-value" id="metric-total-visits">0</strong>
-        <span class="metric-foot">Desde o início do log</span>
+        <span class="metric-foot" id="metric-foot-total">Desde o inicio do log</span>
       </article>
       <article class="metric-card">
-        <span class="metric-label">Visitas nas últimas 24h</span>
+        <span class="metric-label" id="metric-label-24h">Visitas nas ultimas 24h</span>
         <strong class="metric-value" id="metric-last-24h">0</strong>
-        <span class="metric-foot">Janela móvel</span>
+        <span class="metric-foot" id="metric-foot-24h">Janela movel</span>
       </article>
       <article class="metric-card">
-        <span class="metric-label">IPs únicos nas últimas 24h</span>
+        <span class="metric-label" id="metric-label-ips">IPs unicos nas ultimas 24h</span>
         <strong class="metric-value" id="metric-unique-ips">0</strong>
-        <span class="metric-foot">Dispositivos / origens</span>
+        <span class="metric-foot" id="metric-foot-ips">Dispositivos / origens</span>
       </article>
     </section>
 
     <section class="stats-grid stats-grid-main">
       <article class="panel-card wide">
         <div class="panel-head">
-          <h2>Entradas por hora</h2>
-          <span>Últimas 24 horas</span>
+          <h2 id="panel-hourly-title">Entradas por hora</h2>
+          <span id="panel-hourly-subtitle">Ultimas 24 horas</span>
         </div>
         <div class="bar-chart" id="hourly-chart"></div>
       </article>
 
       <article class="panel-card">
         <div class="panel-head">
-          <h2>Navegadores</h2>
-          <span>Top acessos</span>
+          <h2 id="panel-browsers-title">Navegadores</h2>
+          <span id="panel-browsers-subtitle">Top acessos</span>
         </div>
         <div class="pill-list" id="top-browsers"></div>
       </article>
 
       <article class="panel-card">
         <div class="panel-head">
-          <h2>Sistemas operacionais</h2>
-          <span>Top acessos</span>
+          <h2 id="panel-os-title">Sistemas operacionais</h2>
+          <span id="panel-os-subtitle">Top acessos</span>
         </div>
         <div class="pill-list" id="top-os"></div>
       </article>
 
       <article class="panel-card">
         <div class="panel-head">
-          <h2>Países</h2>
-          <span>Origem dos acessos</span>
+          <h2 id="panel-countries-title">Paises</h2>
+          <span id="panel-countries-subtitle">Origem dos acessos</span>
         </div>
         <div class="pill-list" id="top-countries"></div>
       </article>
 
       <article class="panel-card">
         <div class="panel-head">
-          <h2>Cidades</h2>
-          <span>Origem dos acessos</span>
+          <h2 id="panel-cities-title">Cidades</h2>
+          <span id="panel-cities-subtitle">Origem dos acessos</span>
         </div>
         <div class="pill-list" id="top-cities"></div>
       </article>
@@ -81,19 +90,19 @@
 
     <section class="panel-card table-panel">
       <div class="panel-head">
-        <h2>Visitas recentes</h2>
-        <span>Últimos 25 acessos</span>
+        <h2 id="panel-recent-title">Visitas recentes</h2>
+        <span id="panel-recent-subtitle">Ultimos 25 acessos</span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Quando</th>
-              <th>IP</th>
-              <th>Navegador</th>
-              <th>Sistema</th>
-              <th>Dispositivo</th>
-              <th>Localização</th>
+              <th id="th-when">Quando</th>
+              <th id="th-ip">IP</th>
+              <th id="th-browser">Navegador</th>
+              <th id="th-system">Sistema</th>
+              <th id="th-device">Dispositivo</th>
+              <th id="th-location">Localizacao</th>
             </tr>
           </thead>
           <tbody id="recent-visits"></tbody>

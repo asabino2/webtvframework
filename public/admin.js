@@ -10,21 +10,127 @@
   const authError = document.getElementById('auth-error');
   const passwordInput = document.getElementById('admin-password');
   const btnLogout = document.getElementById('btn-logout');
+  const languageSelect = document.getElementById('admin-language-select');
+
+  const LANG_KEY = 'webtv_lang';
+  const i18n = {
+    pt: {
+      adminTitle: 'Administracao',
+      adminKicker: 'Painel administrativo',
+      languageLabel: 'Idioma',
+      menuBlocks: 'Bloqueio de Regiao',
+      menuStats: 'Estatisticas',
+      logout: 'Sair',
+      iframeTitle: 'Conteudo da administracao',
+      authTitle: 'Acesso administrativo',
+      authSubtitle: 'Informe a senha para acessar a administracao.',
+      authPasswordLabel: 'Senha',
+      authSubmit: 'Entrar',
+      viewBlocks: 'Bloqueio de Regiao',
+      viewStats: 'Estatisticas',
+      authStatusError: 'Falha ao consultar status da autenticacao',
+      invalidPassword: 'Senha invalida',
+      updateCheckError: 'Falha ao verificar atualizacoes.',
+      updateApplyError: 'Falha ao aplicar atualizacao.',
+      updateFound: 'Foi encontrada uma nova versao',
+      currentVersion: 'Versao atual',
+      askUpdateNow: 'Deseja atualizar agora?',
+      updateDoneRestart: 'Atualizacao concluida. O aplicativo sera reiniciado em instantes.',
+      updateDone: 'Atualizacao concluida com sucesso.',
+      loadAdminError: 'Nao foi possivel carregar a administracao.',
+      invalidPasswordShort: 'Senha invalida.'
+    },
+    en: {
+      adminTitle: 'Administration',
+      adminKicker: 'Admin panel',
+      languageLabel: 'Language',
+      menuBlocks: 'Region Blocking',
+      menuStats: 'Statistics',
+      logout: 'Sign out',
+      iframeTitle: 'Administration content',
+      authTitle: 'Administrative access',
+      authSubtitle: 'Enter password to access administration.',
+      authPasswordLabel: 'Password',
+      authSubmit: 'Sign in',
+      viewBlocks: 'Region Blocking',
+      viewStats: 'Statistics',
+      authStatusError: 'Failed to load authentication status',
+      invalidPassword: 'Invalid password',
+      updateCheckError: 'Failed to check updates.',
+      updateApplyError: 'Failed to apply update.',
+      updateFound: 'A new version was found',
+      currentVersion: 'Current version',
+      askUpdateNow: 'Do you want to update now?',
+      updateDoneRestart: 'Update completed. The application will restart shortly.',
+      updateDone: 'Update completed successfully.',
+      loadAdminError: 'Could not load administration.',
+      invalidPasswordShort: 'Invalid password.'
+    }
+  };
+
+  function getLang() {
+    return window.localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'pt';
+  }
+
+  let currentLang = getLang();
+
+  function t(key) {
+    return i18n[currentLang][key] || i18n.pt[key] || key;
+  }
 
   const routeByView = {
     blocks: '/bloqueios',
     stats: '/estatisticas',
   };
 
-  const titleByView = {
-    blocks: 'Bloqueio de Região',
-    stats: 'Estatísticas',
-  };
+  function titleByView(view) {
+    return view === 'stats' ? t('viewStats') : t('viewBlocks');
+  }
+
+  function applyStaticTranslations() {
+    document.documentElement.lang = currentLang === 'en' ? 'en-US' : 'pt-BR';
+
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    setText('admin-kicker', t('adminKicker'));
+    setText('admin-language-label', t('languageLabel'));
+    setText('menu-blocks', t('menuBlocks'));
+    setText('menu-stats', t('menuStats'));
+    setText('btn-logout', t('logout'));
+    setText('auth-title', t('authTitle'));
+    setText('auth-subtitle', t('authSubtitle'));
+    setText('auth-password-label', t('authPasswordLabel'));
+    setText('auth-submit', t('authSubmit'));
+
+    if (frame) {
+      frame.title = t('iframeTitle');
+    }
+  }
+
+  function initLanguageControl() {
+    if (!languageSelect) return;
+    languageSelect.value = currentLang;
+    languageSelect.addEventListener('change', () => {
+      currentLang = languageSelect.value === 'en' ? 'en' : 'pt';
+      window.localStorage.setItem(LANG_KEY, currentLang);
+      applyStaticTranslations();
+      setView(getCurrentView());
+      setChannelName(channelNameEl.textContent || 'Webtv framework');
+    });
+  }
+
+  function getCurrentView() {
+    const active = menuItems.find((item) => item.classList.contains('is-active'));
+    return active?.dataset.view || 'blocks';
+  }
 
   function setChannelName(name) {
     const channelName = String(name || 'Webtv framework');
     channelNameEl.textContent = channelName;
-    document.title = `${channelName} — Administração`;
+    document.title = `${channelName} — ${t('adminTitle')}`;
   }
 
   function setView(view) {
@@ -34,7 +140,7 @@
       item.classList.toggle('is-active', item.dataset.view === selected);
     });
 
-    viewTitle.textContent = titleByView[selected] || titleByView.blocks;
+    viewTitle.textContent = titleByView(selected);
 
     const target = routeByView[selected];
     if (frame.getAttribute('src') !== target) {
@@ -53,7 +159,7 @@
   async function loadStatus() {
     const response = await fetch('/api/admin/auth/status');
     if (!response.ok) {
-      throw new Error('Falha ao consultar status da autenticação');
+      throw new Error(t('authStatusError'));
     }
 
     return response.json();
@@ -68,7 +174,7 @@
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      throw new Error(data.error || 'Senha inválida');
+      throw new Error(data.error || t('invalidPassword'));
     }
 
     return response.json();
@@ -81,7 +187,7 @@
   async function checkForUpdates() {
     const response = await fetch('/api/admin/update/check');
     if (!response.ok) {
-      throw new Error('Falha ao verificar atualizações.');
+      throw new Error(t('updateCheckError'));
     }
 
     return response.json();
@@ -92,7 +198,7 @@
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(payload.error || 'Falha ao aplicar atualização.');
+      throw new Error(payload.error || t('updateApplyError'));
     }
 
     return payload;
@@ -106,8 +212,8 @@
       }
 
       const shouldUpdate = window.confirm(
-        `Foi encontrada uma nova versão (${status.latestVersion}). ` +
-        `Versão atual: ${status.currentVersion}. Deseja atualizar agora?`
+        `${t('updateFound')} (${status.latestVersion}). ` +
+        `${t('currentVersion')}: ${status.currentVersion}. ${t('askUpdateNow')}`
       );
 
       if (!shouldUpdate) {
@@ -116,9 +222,9 @@
 
       const result = await applyUpdate();
       if (result.restartScheduled) {
-        window.alert('Atualização concluída. O aplicativo será reiniciado em instantes.');
+        window.alert(t('updateDoneRestart'));
       } else {
-        window.alert('Atualização concluída com sucesso.');
+        window.alert(t('updateDone'));
       }
     } catch (error) {
       console.error('[ADMIN] Erro no fluxo de atualização:', error);
@@ -150,7 +256,7 @@
       setAuthVisibility(false);
       frame.setAttribute('src', 'about:blank');
       authError.style.display = 'block';
-      authError.textContent = 'Não foi possível carregar a administração.';
+      authError.textContent = t('loadAdminError');
       console.error('[ADMIN] Erro ao iniciar painel:', error);
     }
   }
@@ -175,7 +281,7 @@
       promptAndUpdateIfNeeded();
     } catch (error) {
       authError.style.display = 'block';
-      authError.textContent = error.message || 'Senha inválida.';
+      authError.textContent = error.message || t('invalidPasswordShort');
     }
   });
 
@@ -188,5 +294,7 @@
     }
   });
 
+  applyStaticTranslations();
+  initLanguageControl();
   boot();
 })();

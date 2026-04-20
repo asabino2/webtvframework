@@ -23,6 +23,8 @@
   const btnCast       = document.getElementById('btn-cast');
   const logoChannelName = document.getElementById('logo-channel-name');
   const appVersionLine = document.getElementById('app-version-line');
+  const appAuthorLine = document.getElementById('app-author-line');
+  const languageSelect = document.getElementById('language-select');
 
   const btnEpg        = document.getElementById('btn-epg');
   const epgOverlay    = document.getElementById('epg-overlay');
@@ -51,6 +53,133 @@
   const viewerCount   = document.getElementById('viewer-count');
   const viewerUpdated = document.getElementById('viewer-updated-at');
 
+  const LANG_KEY = 'webtv_lang';
+  const i18n = {
+    pt: {
+      live: 'AO VIVO',
+      languageLabel: 'Idioma',
+      epgButton: 'Grade de Programacao',
+      loadingBroadcast: 'Carregando transmissao...',
+      streamUnavailable: 'Sinal indisponivel no momento.',
+      retry: 'Tentar novamente',
+      now: 'Agora',
+      next: 'A seguir',
+      realtimeAudience: 'Audiencia em tempo real',
+      viewersNow: 'pessoas assistindo agora',
+      waitingUpdate: 'Aguardando atualizacao...',
+      createdBy: 'Criado por Alexander Sabino em 2026',
+      epgTitle: '📋 Grade de Programacao',
+      loadingEpg: 'Carregando grade...',
+      close: 'Fechar',
+      coverMissing: 'Sem imagem de capa',
+      synopsis: 'Sinopse',
+      titleLive: 'Ao Vivo',
+      mute: 'Mudo',
+      fullscreen: 'Tela Cheia',
+      cast: 'Enviar para Google Cast',
+      playPause: 'Play / Pause',
+      volume: 'Volume',
+      updatedAt: 'Atualizado as',
+      updateUnavailable: 'Atualizacao indisponivel',
+      scheduleUnavailable: 'Sem informacao de programacao',
+      epgLoadError: 'Nao foi possivel carregar o EPG',
+      epgLoadingGrid: 'Carregando grade de programacao...',
+      epgGridLoadError: 'Nao foi possivel carregar a grade.',
+      noSchedule: 'Nenhuma programacao disponivel.',
+      nowTag: 'AO VIVO',
+      timeUnavailable: 'Horario indisponivel',
+      untitled: 'Sem titulo',
+      synopsisUnavailable: 'Sinopse nao disponivel para esta atracao.',
+      actors: 'Atores',
+      direction: 'Direcao',
+      presentation: 'Apresentacao',
+      production: 'Producao',
+      writing: 'Roteiro',
+      country: 'Pais',
+      language: 'Idioma',
+      originalLanguage: 'Idioma original',
+      date: 'Data',
+      episode: 'Episodio',
+      rating: 'Classificacao',
+      castLocalhostAlert: 'Para usar o Google Cast, acesse o site pelo IP da maquina na rede local, nao por localhost.',
+      castFailAlert: 'Nao foi possivel iniciar o Google Cast nesta tentativa.',
+      streamLoadError: 'Erro ao carregar o stream. Verifique se o servidor de origem esta ativo.',
+      streamNativeError: 'Nao foi possivel reproduzir o stream.',
+      hlsUnsupported: 'Seu navegador nao suporta reproducao HLS.',
+      liveSubtitleFallback: 'Transmissao ao vivo',
+      streamNoticeFallback: 'Transmissao indisponivel no momento.'
+    },
+    en: {
+      live: 'LIVE',
+      languageLabel: 'Language',
+      epgButton: 'Program Guide',
+      loadingBroadcast: 'Loading broadcast...',
+      streamUnavailable: 'Signal unavailable at the moment.',
+      retry: 'Try again',
+      now: 'Now',
+      next: 'Up next',
+      realtimeAudience: 'Real-time audience',
+      viewersNow: 'people watching now',
+      waitingUpdate: 'Waiting for update...',
+      createdBy: 'Created by Alexander Sabino in 2026',
+      epgTitle: '📋 Program Guide',
+      loadingEpg: 'Loading guide...',
+      close: 'Close',
+      coverMissing: 'No cover image',
+      synopsis: 'Synopsis',
+      titleLive: 'Live',
+      mute: 'Mute',
+      fullscreen: 'Fullscreen',
+      cast: 'Cast to Google Cast',
+      playPause: 'Play / Pause',
+      volume: 'Volume',
+      updatedAt: 'Updated at',
+      updateUnavailable: 'Update unavailable',
+      scheduleUnavailable: 'No schedule information available',
+      epgLoadError: 'Could not load the EPG',
+      epgLoadingGrid: 'Loading program guide...',
+      epgGridLoadError: 'Could not load the guide.',
+      noSchedule: 'No programming available.',
+      nowTag: 'LIVE',
+      timeUnavailable: 'Time unavailable',
+      untitled: 'Untitled',
+      synopsisUnavailable: 'Synopsis not available for this title.',
+      actors: 'Actors',
+      direction: 'Direction',
+      presentation: 'Presentation',
+      production: 'Production',
+      writing: 'Writing',
+      country: 'Country',
+      language: 'Language',
+      originalLanguage: 'Original language',
+      date: 'Date',
+      episode: 'Episode',
+      rating: 'Rating',
+      castLocalhostAlert: 'To use Google Cast, open the site using your machine IP on local network, not localhost.',
+      castFailAlert: 'Could not start Google Cast this time.',
+      streamLoadError: 'Error loading stream. Check if the source server is active.',
+      streamNativeError: 'Could not play the stream.',
+      hlsUnsupported: 'Your browser does not support HLS playback.',
+      liveSubtitleFallback: 'Live broadcast',
+      streamNoticeFallback: 'Broadcast unavailable at the moment.'
+    }
+  };
+
+  function getCurrentLang() {
+    const stored = window.localStorage.getItem(LANG_KEY);
+    return stored === 'en' ? 'en' : 'pt';
+  }
+
+  let currentLang = getCurrentLang();
+
+  function locale() {
+    return currentLang === 'en' ? 'en-US' : 'pt-BR';
+  }
+
+  function t(key) {
+    return i18n[currentLang][key] || i18n.pt[key] || key;
+  }
+
   // ── HLS Player ──────────────────────────────────────────────────────────
   let hls = null;
   let analyticsSessionId = null;
@@ -58,6 +187,67 @@
   let liveTimer = null;
   let channelName = 'Webtv framework';
   let appVersion = '0.0.1';
+
+  function updateDocumentTitle() {
+    document.title = `${channelName} — ${t('titleLive')}`;
+  }
+
+  function applyStaticTranslations() {
+    document.documentElement.lang = currentLang === 'en' ? 'en-US' : 'pt-BR';
+
+    const byId = (id) => document.getElementById(id);
+    const setText = (id, value) => {
+      const el = byId(id);
+      if (el) el.textContent = value;
+    };
+
+    setText('live-badge-text', t('live'));
+    setText('language-label', t('languageLabel'));
+    setText('btn-epg-text', t('epgButton'));
+    setText('player-loading-text', t('loadingBroadcast'));
+    setText('error-msg', t('streamUnavailable'));
+    setText('btn-retry', t('retry'));
+    setText('label-now', t('now'));
+    setText('label-next', t('next'));
+    setText('label-audience', t('realtimeAudience'));
+    setText('audience-caption', t('viewersNow'));
+    setText('viewer-updated-at', t('waitingUpdate'));
+    setText('app-author-line', t('createdBy'));
+    setText('epg-modal-title', t('epgTitle'));
+    setText('epg-loading-text', t('loadingEpg'));
+    setText('epg-detail-cover-empty', t('coverMissing'));
+    setText('epg-synopsis-title', t('synopsis'));
+
+    if (appVersionLine) {
+      appVersionLine.textContent = `Webtv Framework - ${currentLang === 'en' ? 'Version' : 'Versao'} ${appVersion}`;
+    }
+
+    const detailClose = byId('epg-detail-close');
+    if (detailClose) detailClose.title = t('close');
+
+    if (btnPlay) btnPlay.title = t('playPause');
+    if (btnMute) btnMute.title = t('mute');
+    if (volRange) volRange.title = t('volume');
+    if (btnFS) btnFS.title = t('fullscreen');
+    if (btnCast) btnCast.title = t('cast');
+
+    updateDocumentTitle();
+  }
+
+  function initLanguageControl() {
+    if (!languageSelect) return;
+    languageSelect.value = currentLang;
+    languageSelect.addEventListener('change', () => {
+      const selected = languageSelect.value === 'en' ? 'en' : 'pt';
+      currentLang = selected;
+      window.localStorage.setItem(LANG_KEY, currentLang);
+      applyStaticTranslations();
+      updateSidebarEpg();
+      if (epgLoaded) {
+        renderEpgGrid(epgGridData);
+      }
+    });
+  }
 
   async function loadPublicConfig() {
     try {
@@ -73,12 +263,12 @@
       // Mantém fallback local quando configuração não estiver disponível.
     }
 
-    document.title = `${channelName} — Ao Vivo`;
+    updateDocumentTitle();
     if (logoChannelName) {
       logoChannelName.textContent = channelName;
     }
     if (appVersionLine) {
-      appVersionLine.textContent = `Webtv Framework - Versão ${appVersion}`;
+      appVersionLine.textContent = `Webtv Framework - ${currentLang === 'en' ? 'Version' : 'Versao'} ${appVersion}`;
     }
   }
 
@@ -99,7 +289,7 @@
       const extinfMatch = playlist.match(/#EXTINF:[^,]*,(.*)/);
       if (extinfMatch?.[1]) return extinfMatch[1].trim();
 
-      return 'Transmissão indisponível no momento.';
+      return t('streamNoticeFallback');
     } catch (_) {
       return null;
     }
@@ -154,7 +344,7 @@
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
           showLoading(false);
-          showError(true, 'Erro ao carregar o stream. Verifique se o servidor de origem está ativo.');
+          showError(true, t('streamLoadError'));
           console.error('[HLS] Erro fatal:', data);
         }
       });
@@ -164,12 +354,12 @@
       video.addEventListener('loadedmetadata', () => showLoading(false), { once: true });
       video.addEventListener('error', () => {
         showLoading(false);
-        showError(true, 'Não foi possível reproduzir o stream.');
+        showError(true, t('streamNativeError'));
       }, { once: true });
       startPlayback();
     } else {
       showLoading(false);
-      showError(true, 'Seu navegador não suporta reprodução HLS.');
+      showError(true, t('hlsUnsupported'));
     }
   }
 
@@ -260,7 +450,7 @@
     }
 
     if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-      window.alert('Para usar o Google Cast, acesse o site pelo IP da máquina na rede local, não por localhost.');
+      window.alert(t('castLocalhostAlert'));
       return;
     }
 
@@ -284,8 +474,8 @@
       mediaInfo.streamType = chrome.cast.media.StreamType.LIVE;
 
       const metadata = new chrome.cast.media.GenericMediaMetadata();
-      metadata.title = `${channelName} ao Vivo`;
-      metadata.subtitle = currentTitle.textContent || 'Transmissão ao vivo';
+      metadata.title = `${channelName} ${t('titleLive')}`;
+      metadata.subtitle = currentTitle.textContent || t('liveSubtitleFallback');
       mediaInfo.metadata = metadata;
 
       const request = new chrome.cast.media.LoadRequest(mediaInfo);
@@ -295,7 +485,7 @@
       await session.loadMedia(request);
     } catch (err) {
       console.error('[CAST] Falha ao iniciar transmissão:', err);
-      window.alert('Não foi possível iniciar o Google Cast nesta tentativa.');
+      window.alert(t('castFailAlert'));
     }
   });
 
@@ -303,7 +493,7 @@
   function fmtTime(iso) {
     if (!iso) return '';
     const d = new Date(iso);
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
   }
 
   function updateSidebarEpg() {
@@ -311,7 +501,7 @@
       .then(r => r.json())
       .then(data => {
         if (!data || !data.length) {
-          currentTitle.textContent = 'Sem informação de programação';
+          currentTitle.textContent = t('scheduleUnavailable');
           return;
         }
 
@@ -345,7 +535,7 @@
         nextCat.style.display = next?.category ? 'inline-block' : 'none';
       })
       .catch(() => {
-        currentTitle.textContent = 'Não foi possível carregar o EPG';
+        currentTitle.textContent = t('epgLoadError');
       });
   }
 
@@ -355,8 +545,8 @@
 
   // ── Analytics / audiência ───────────────────────────────────────────────
   function fmtUpdatedAt(iso) {
-    if (!iso) return 'Atualização indisponível';
-    return `Atualizado às ${new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+    if (!iso) return t('updateUnavailable');
+    return `${t('updatedAt')} ${new Date(iso).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
   }
 
   function updateViewerCard(viewers, updatedAt = new Date().toISOString()) {
@@ -464,7 +654,7 @@
     epgGridBody.innerHTML = `
       <div class="epg-loading">
         <div class="spinner"></div>
-        <p>Carregando grade de programação…</p>
+        <p>${t('epgLoadingGrid')}</p>
       </div>`;
 
     fetch('/api/epg/grid')
@@ -474,13 +664,13 @@
         renderEpgGrid(epgGridData);
       })
       .catch(() => {
-        epgGridBody.innerHTML = '<p style="color:var(--text-muted);padding:40px;text-align:center">Não foi possível carregar a grade.</p>';
+        epgGridBody.innerHTML = `<p style="color:var(--text-muted);padding:40px;text-align:center">${t('epgGridLoadError')}</p>`;
       });
   }
 
   function renderEpgGrid(grid) {
     if (!grid || !grid.length) {
-      epgGridBody.innerHTML = '<p style="color:var(--text-muted);padding:40px;text-align:center">Nenhuma programação disponível.</p>';
+      epgGridBody.innerHTML = `<p style="color:var(--text-muted);padding:40px;text-align:center">${t('noSchedule')}</p>`;
       return;
     }
 
@@ -504,14 +694,14 @@
 
         // Separador de data
         if (start) {
-          const dateLabel = start.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+          const dateLabel = start.toLocaleDateString(locale(), { weekday: 'long', day: '2-digit', month: 'long' });
           if (dateLabel !== lastDate) {
             html += `<div class="epg-date-separator">${esc(dateLabel)}</div>`;
             lastDate = dateLabel;
           }
         }
 
-        const timeStr = start ? start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+        const timeStr = start ? start.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : '—';
 
         html += `<button class="epg-programme-btn" type="button" data-channel-index="${channelIndex}" data-programme-index="${programmeIndex}"><div class="epg-programme${isCurr ? ' is-current' : ''}">
           <div class="epg-prog-time">${timeStr}</div>
@@ -519,7 +709,7 @@
             <div class="epg-prog-title">${esc(prog.title)}</div>
             ${prog.desc ? `<div class="epg-prog-desc">${esc(prog.desc)}</div>` : ''}
           </div>
-          ${isCurr ? '<div class="epg-now-tag">AO VIVO</div>' : ''}
+          ${isCurr ? `<div class="epg-now-tag">${esc(t('nowTag'))}</div>` : ''}
         </div></button>`;
       }
 
@@ -566,16 +756,16 @@
   function fmtDetailDate(startIso, stopIso) {
     const start = startIso ? new Date(startIso) : null;
     const stop = stopIso ? new Date(stopIso) : null;
-    if (!start) return 'Horário indisponível';
+    if (!start) return t('timeUnavailable');
 
-    const day = start.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+    const day = start.toLocaleDateString(locale(), { weekday: 'long', day: '2-digit', month: 'long' });
     if (!stop) return `${day} • ${fmtTime(startIso)}`;
     return `${day} • ${fmtTime(startIso)} — ${fmtTime(stopIso)}`;
   }
 
   function openProgrammeDetail(programme, channel) {
     epgDetailTime.textContent = `${fmtDetailDate(programme.start, programme.stop)}${channel?.name ? ` • ${decodeHtml(channel.name)}` : ''}`;
-    epgDetailTitle.textContent = decodeHtml(programme.title || 'Sem título');
+    epgDetailTitle.textContent = decodeHtml(programme.title || t('untitled'));
 
     if (programme.subTitle) {
       epgDetailSubtitle.style.display = 'block';
@@ -593,7 +783,7 @@
       epgDetailCategory.textContent = '';
     }
 
-    epgDetailDesc.textContent = decodeHtml(programme.desc || 'Sinopse não disponível para esta atração.');
+    epgDetailDesc.textContent = decodeHtml(programme.desc || t('synopsisUnavailable'));
 
     if (programme.icon) {
       epgDetailCover.style.display = 'block';
@@ -619,17 +809,17 @@
     const countries = Array.isArray(programme.countries) ? programme.countries.join(', ') : '';
 
     epgDetailExtra.innerHTML = [
-      addDetailItem('Atores', actors),
-      addDetailItem('Direção', directors),
-      addDetailItem('Apresentação', presenters),
-      addDetailItem('Produção', producers),
-      addDetailItem('Roteiro', writers),
-      addDetailItem('País', countries),
-      addDetailItem('Idioma', programme.language),
-      addDetailItem('Idioma original', programme.originalLanguage),
-      addDetailItem('Data', programme.date),
-      addDetailItem('Episódio', programme.episodeNum),
-      addDetailItem('Classificação', programme.rating),
+      addDetailItem(t('actors'), actors),
+      addDetailItem(t('direction'), directors),
+      addDetailItem(t('presentation'), presenters),
+      addDetailItem(t('production'), producers),
+      addDetailItem(t('writing'), writers),
+      addDetailItem(t('country'), countries),
+      addDetailItem(t('language'), programme.language),
+      addDetailItem(t('originalLanguage'), programme.originalLanguage),
+      addDetailItem(t('date'), programme.date),
+      addDetailItem(t('episode'), programme.episodeNum),
+      addDetailItem(t('rating'), programme.rating),
     ].filter(Boolean).join('');
 
     epgDetailOverlay.style.display = 'flex';
@@ -654,7 +844,11 @@
   }
 
   // ── Inicializa ────────────────────────────────────────────────────────────
+  applyStaticTranslations();
+  initLanguageControl();
+
   loadPublicConfig().finally(() => {
+    applyStaticTranslations();
     initPlayer();
     startAnalyticsSession();
   });
