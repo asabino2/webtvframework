@@ -1,0 +1,17 @@
+services:
+  tvsabinos-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tvsabinos-web
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      UPSTREAM_BASE: ${UPSTREAM_BASE:-http://192.168.1.186:8409}
+      M3U8_URL: ${M3U8_URL:-http://192.168.1.186:8409/iptv/channel/2.m3u8?mode=segmenter}
+      EPG_URL: ${EPG_URL:-http://192.168.1.186:8409/iptv/xmltv.xml}
+    restart: unless-stopped

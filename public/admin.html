@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administração</title>
+  <link rel="stylesheet" href="/admin.css" />
+</head>
+<body>
+  <main class="admin-shell" id="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="brand-wrap">
+        <p class="brand-kicker">Painel administrativo</p>
+        <h1 id="channel-name">Webtv framework</h1>
+      </div>
+
+      <nav class="admin-menu" aria-label="Menu da administração">
+        <button type="button" class="menu-item is-active" data-view="blocks">Bloqueio de Região</button>
+        <button type="button" class="menu-item" data-view="stats">Estatísticas</button>
+      </nav>
+
+      <button type="button" id="btn-logout" class="btn-logout" style="display:none">Sair</button>
+    </aside>
+
+    <section class="admin-content">
+      <header class="content-head">
+        <h2 id="view-title">Bloqueio de Região</h2>
+      </header>
+
+      <div class="iframe-wrap">
+        <iframe id="admin-frame" title="Conteúdo da administração" loading="eager"></iframe>
+      </div>
+    </section>
+  </main>
+
+  <div class="auth-overlay" id="auth-overlay" style="display:none">
+    <form id="auth-form" class="auth-card">
+      <h3>Acesso administrativo</h3>
+      <p>Informe a senha para acessar a administração.</p>
+      <label for="admin-password">Senha</label>
+      <input id="admin-password" name="password" type="password" autocomplete="current-password" required />
+      <button type="submit">Entrar</button>
+      <p id="auth-error" class="auth-error" style="display:none"></p>
+    </form>
+  </div>
+
+  <script src="/admin.js"></script>
+</body>
+</html>

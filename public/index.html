@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Webtv framework — Ao Vivo</title>
+  <link rel="stylesheet" href="/style.css" />
+  <!-- HLS.js -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
+  <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">📺</span>
+        <span class="logo-text"><span id="logo-channel-name">Webtv framework</span></span>
+      </div>
+      <div class="live-badge">
+        <span class="live-dot"></span> AO VIVO
+      </div>
+      <button id="btn-epg" class="btn-epg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Grade de Programação
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Main ───────────────────────────────────────────────────────────── -->
+  <main class="main-layout">
+
+    <!-- Player -->
+    <section class="player-section">
+      <div class="player-wrapper" id="player-wrapper">
+        <video id="video" playsinline autoplay></video>
+
+        <!-- Overlay de controles -->
+        <div class="player-controls" id="player-controls">
+          <div class="ctrl-bar">
+            <button class="ctrl-btn" id="btn-play" title="Play / Pause">
+              <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+            </button>
+            <div class="ctrl-spacer"></div>
+            <button class="ctrl-btn" id="btn-mute" title="Mudo">
+              <svg id="icon-vol" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              </svg>
+              <svg id="icon-muted" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                style="display:none">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <line x1="23" y1="9" x2="17" y2="15"></line>
+                <line x1="17" y1="9" x2="23" y2="15"></line>
+              </svg>
+            </button>
+            <input type="range" id="volume-range" class="volume-range" min="0" max="1" step="0.05" value="1" title="Volume" />
+            <button class="ctrl-btn" id="btn-fullscreen" title="Tela Cheia">
+              <svg id="icon-fs" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+                <line x1="21" y1="3" x2="14" y2="10"></line>
+                <line x1="3" y1="21" x2="10" y2="14"></line>
+              </svg>
+              <svg id="icon-exit-fs" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                style="display:none">
+                <polyline points="4 14 10 14 10 20"></polyline>
+                <polyline points="20 10 14 10 14 4"></polyline>
+                <line x1="10" y1="14" x2="3" y2="21"></line>
+                <line x1="21" y1="3" x2="14" y2="10"></line>
+              </svg>
+            </button>
+            <button class="ctrl-btn cast-btn" id="btn-cast" title="Enviar para Google Cast" style="display:none">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 8.82V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"></path>
+                <path d="M2 17a5 5 0 0 1 5 5"></path>
+                <path d="M2 13a9 9 0 0 1 9 9"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Spinner de loading -->
+        <div class="player-loading" id="player-loading">
+          <div class="spinner"></div>
+          <p>Carregando transmissão…</p>
+        </div>
+
+        <!-- Mensagem de erro -->
+        <div class="player-error" id="player-error" style="display:none">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+            stroke="#e74c3c" stroke-width="2"><circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <p id="error-msg">Sinal indisponível no momento.</p>
+          <button class="btn-retry" id="btn-retry">Tentar novamente</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sidebar EPG atual -->
+    <aside class="epg-sidebar">
+      <!-- Programa atual -->
+      <div class="program-card current-program">
+        <div class="program-card-label">
+          <span class="live-dot small"></span> Agora
+        </div>
+        <div class="program-card-title" id="current-title">Carregando…</div>
+        <div class="program-card-time" id="current-time"></div>
+        <div class="program-progress-bar">
+          <div class="program-progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="program-card-desc" id="current-desc"></div>
+        <div class="program-card-category" id="current-cat"></div>
+      </div>
+
+      <!-- Próximo programa -->
+      <div class="program-card next-program">
+        <div class="program-card-label next-label">A seguir</div>
+        <div class="program-card-title" id="next-title">—</div>
+        <div class="program-card-time" id="next-time"></div>
+        <div class="program-card-desc" id="next-desc"></div>
+        <div class="program-card-category" id="next-cat"></div>
+      </div>
+
+      <div class="program-card audience-program">
+        <div class="program-card-label next-label">Audiência em tempo real</div>
+        <div class="audience-count" id="viewer-count">0</div>
+        <div class="audience-caption">pessoas assistindo agora</div>
+        <div class="audience-meta" id="viewer-updated-at">Aguardando atualização…</div>
+      </div>
+    </aside>
+
+  </main>
+
+  <footer class="app-footer">
+    <p id="app-version-line">Webtv Framework - Versão 0.0.1</p>
+    <p>Criado por Alexander Sabino em 2026</p>
+  </footer>
+
+  <!-- ── Modal Grade EPG ──────────────────────────────────────────────────── -->
+  <div class="epg-overlay" id="epg-overlay">
+    <div class="epg-modal">
+      <div class="epg-modal-header">
+        <h2>📋 Grade de Programação</h2>
+        <button class="epg-close" id="epg-close">✕</button>
+      </div>
+      <div class="epg-modal-body" id="epg-grid-body">
+        <div class="epg-loading">
+          <div class="spinner"></div>
+          <p>Carregando grade…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="epg-detail-overlay" id="epg-detail-overlay" style="display:none">
+    <div class="epg-detail-modal">
+      <button class="epg-detail-close" id="epg-detail-close" title="Fechar">✕</button>
+      <div class="epg-detail-cover-wrap">
+        <img id="epg-detail-cover" class="epg-detail-cover" alt="Capa da atração" style="display:none" />
+        <div id="epg-detail-cover-empty" class="epg-detail-cover-empty">Sem imagem de capa</div>
+      </div>
+      <div class="epg-detail-content">
+        <div class="epg-detail-meta" id="epg-detail-time"></div>
+        <h3 id="epg-detail-title" class="epg-detail-title"></h3>
+        <div id="epg-detail-subtitle" class="epg-detail-subtitle" style="display:none"></div>
+        <div id="epg-detail-category" class="epg-detail-chip" style="display:none"></div>
+
+        <h4 class="epg-detail-section-title">Sinopse</h4>
+        <p id="epg-detail-desc" class="epg-detail-desc"></p>
+
+        <div id="epg-detail-extra" class="epg-detail-extra"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

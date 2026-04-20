@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Webtv framework — Estatísticas</title>
+  <link rel="stylesheet" href="/stats.css" />
+</head>
+<body>
+  <main class="stats-shell">
+    <section class="stats-hero">
+      <p class="stats-kicker">Painel interno</p>
+      <h1>Estatísticas da transmissão</h1>
+      <p class="stats-subtitle">Visão em tempo real da audiência, distribuição de acessos e visitas recentes.</p>
+    </section>
+
+    <section class="stats-grid stats-grid-top">
+      <article class="metric-card emphasis">
+        <span class="metric-label">Assistindo agora</span>
+        <strong class="metric-value" id="metric-current-viewers">0</strong>
+        <span class="metric-foot" id="metric-updated">Atualizando…</span>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Visitas totais</span>
+        <strong class="metric-value" id="metric-total-visits">0</strong>
+        <span class="metric-foot">Desde o início do log</span>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Visitas nas últimas 24h</span>
+        <strong class="metric-value" id="metric-last-24h">0</strong>
+        <span class="metric-foot">Janela móvel</span>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">IPs únicos nas últimas 24h</span>
+        <strong class="metric-value" id="metric-unique-ips">0</strong>
+        <span class="metric-foot">Dispositivos / origens</span>
+      </article>
+    </section>
+
+    <section class="stats-grid stats-grid-main">
+      <article class="panel-card wide">
+        <div class="panel-head">
+          <h2>Entradas por hora</h2>
+          <span>Últimas 24 horas</span>
+        </div>
+        <div class="bar-chart" id="hourly-chart"></div>
+      </article>
+
+      <article class="panel-card">
+        <div class="panel-head">
+          <h2>Navegadores</h2>
+          <span>Top acessos</span>
+        </div>
+        <div class="pill-list" id="top-browsers"></div>
+      </article>
+
+      <article class="panel-card">
+        <div class="panel-head">
+          <h2>Sistemas operacionais</h2>
+          <span>Top acessos</span>
+        </div>
+        <div class="pill-list" id="top-os"></div>
+      </article>
+
+      <article class="panel-card">
+        <div class="panel-head">
+          <h2>Países</h2>
+          <span>Origem dos acessos</span>
+        </div>
+        <div class="pill-list" id="top-countries"></div>
+      </article>
+
+      <article class="panel-card">
+        <div class="panel-head">
+          <h2>Cidades</h2>
+          <span>Origem dos acessos</span>
+        </div>
+        <div class="pill-list" id="top-cities"></div>
+      </article>
+    </section>
+
+    <section class="panel-card table-panel">
+      <div class="panel-head">
+        <h2>Visitas recentes</h2>
+        <span>Últimos 25 acessos</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>IP</th>
+              <th>Navegador</th>
+              <th>Sistema</th>
+              <th>Dispositivo</th>
+              <th>Localização</th>
+            </tr>
+          </thead>
+          <tbody id="recent-visits"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/stats.js"></script>
+</body>
+</html>
