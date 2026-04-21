@@ -40,7 +40,7 @@ let updatePromise = null;
 const UPSTREAM_BASE = process.env.UPSTREAM_BASE || 'http://192.168.1.186:8409';
 const DEFAULT_M3U8_URL = process.env.M3U8_URL || `${UPSTREAM_BASE}/iptv/channel/2.m3u8?mode=segmenter`;
 const DEFAULT_EPG_URL = process.env.EPG_URL || `${UPSTREAM_BASE}/iptv/xmltv.xml`;
-const DEFAULT_FAVICON_URL = process.env.FAVICON_URL || '';
+const DEFAULT_FAVICON_URL = process.env.FAVICON_URL || '/favicon-default.svg';
 const STREAM_CHANNEL_ID = process.env.STREAM_CHANNEL_ID || null;
 
 // Cache do EPG para evitar requisições repetidas
