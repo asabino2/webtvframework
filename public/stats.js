@@ -13,6 +13,7 @@
   const topCountries = document.getElementById('top-countries');
   const topCities = document.getElementById('top-cities');
   const topReferrers = document.getElementById('top-referrers');
+  const PIE_COLORS = ['#f4b338', '#38d9a9', '#4dabf7', '#b197fc', '#ff8787', '#ffa94d', '#94d82d', '#66d9e8'];
 
   const LANG_KEY = 'webtv_lang';
   const i18n = {
@@ -47,6 +48,7 @@
       panelReferrers: 'Referrer',
       panelReferrersSub: 'Sites de origem',
       directAccess: 'Direto',
+      totalLabel: 'Total',
       emptyData: 'Ainda sem dados suficientes.',
       emptyVisits: 'Nenhuma visita registrada.',
       updatedAt: 'Atualizado as',
@@ -83,6 +85,7 @@
       panelReferrers: 'Referrer',
       panelReferrersSub: 'Source sites',
       directAccess: 'Direct',
+      totalLabel: 'Total',
       emptyData: 'Not enough data yet.',
       emptyVisits: 'No visits recorded.',
       updatedAt: 'Updated at',
@@ -158,18 +161,52 @@
     }
   }
 
-  function renderPills(container, items) {
+  function renderPieChart(container, items) {
     if (!items || !items.length) {
       container.innerHTML = `<p class="empty-state">${t('emptyData')}</p>`;
       return;
     }
 
-    container.innerHTML = items.map(item => `
-      <div class="pill">
-        <b>${escapeHtml(item.label)}</b>
-        <span>${item.value}</span>
+    const total = items.reduce((sum, item) => sum + Number(item.value || 0), 0);
+    if (!total) {
+      container.innerHTML = `<p class="empty-state">${t('emptyData')}</p>`;
+      return;
+    }
+
+    let cursor = 0;
+    const slices = [];
+    const legendRows = items.map((item, index) => {
+      const value = Number(item.value || 0);
+      const percentage = (value / total) * 100;
+      const color = PIE_COLORS[index % PIE_COLORS.length];
+      const start = cursor;
+      const end = cursor + percentage;
+
+      slices.push(`${color} ${start.toFixed(2)}% ${end.toFixed(2)}%`);
+      cursor = end;
+
+      return `
+        <div class="pie-legend-row">
+          <span class="pie-legend-dot" style="background:${color}"></span>
+          <span class="pie-legend-label">${escapeHtml(item.label)}</span>
+          <span class="pie-legend-value">${value} (${percentage.toFixed(1)}%)</span>
+        </div>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="pie-layout">
+        <div class="pie-chart" style="background: conic-gradient(${slices.join(', ')});">
+          <div class="pie-hole">
+            <small>${t('totalLabel')}</small>
+            <strong>${total}</strong>
+          </div>
+        </div>
+        <div class="pie-legend">
+          ${legendRows}
+        </div>
       </div>
-    `).join('');
+    `;
   }
 
   function renderHourlyChart(series) {
@@ -226,11 +263,11 @@
     updatedAt.textContent = `${t('updatedAt')} ${new Date().toLocaleTimeString(locale())}`;
 
     renderHourlyChart(data.hourlyVisits || { labels: [], values: [] });
-    renderPills(topBrowsers, data.topBrowsers);
-    renderPills(topOs, data.topOperatingSystems);
-    renderPills(topCountries, data.topCountries);
-    renderPills(topCities, data.topCities);
-    renderPills(topReferrers, data.topReferrers);
+    renderPieChart(topBrowsers, data.topBrowsers);
+    renderPieChart(topOs, data.topOperatingSystems);
+    renderPieChart(topCountries, data.topCountries);
+    renderPieChart(topCities, data.topCities);
+    renderPieChart(topReferrers, data.topReferrers);
     renderRecentVisits(data.recentVisits);
   }
 

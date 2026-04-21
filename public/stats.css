@@ -170,6 +170,77 @@ body {
   gap: 10px;
 }
 
+.pie-layout {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.pie-chart {
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.24);
+}
+
+.pie-hole {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: rgba(11, 20, 30, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(136, 167, 203, 0.22);
+}
+
+.pie-hole small {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.pie-hole strong {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.pie-legend {
+  display: grid;
+  gap: 8px;
+}
+
+.pie-legend-row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.pie-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.pie-legend-label {
+  font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pie-legend-value {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
@@ -253,5 +324,14 @@ td {
   .bar-label {
     writing-mode: vertical-rl;
     transform: rotate(180deg);
+  }
+
+  .pie-layout {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .pie-legend {
+    width: 100%;
   }
 }
