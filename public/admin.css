@@ -112,6 +112,36 @@ body {
   cursor: pointer;
 }
 
+.update-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.update-available-label {
+  margin: 0;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.btn-update {
+  border: 1px solid rgba(255, 200, 87, 0.5);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 200, 87, 0.16);
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-update:hover {
+  background: rgba(255, 200, 87, 0.28);
+}
+
 .admin-content {
   display: flex;
   flex-direction: column;

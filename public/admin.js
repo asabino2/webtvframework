@@ -10,6 +10,9 @@
   const authError = document.getElementById('auth-error');
   const passwordInput = document.getElementById('admin-password');
   const btnLogout = document.getElementById('btn-logout');
+  const btnUpdate = document.getElementById('btn-update');
+  const updateSection = document.getElementById('update-section');
+  const updateAvailableLabel = document.getElementById('update-available-label');
   const languageSelect = document.getElementById('admin-language-select');
 
   const LANG_KEY = 'webtv_lang';
@@ -21,6 +24,8 @@
       menuBlocks: 'Bloqueio de Regiao',
       menuStats: 'Estatisticas',
       logout: 'Sair',
+      update: 'Atualizar',
+      newVersionAvailable: 'Nova versao disponivel',
       iframeTitle: 'Conteudo da administracao',
       authTitle: 'Acesso administrativo',
       authSubtitle: 'Informe a senha para acessar a administracao.',
@@ -47,6 +52,8 @@
       menuBlocks: 'Region Blocking',
       menuStats: 'Statistics',
       logout: 'Sign out',
+      update: 'Update',
+      newVersionAvailable: 'New version available',
       iframeTitle: 'Administration content',
       authTitle: 'Administrative access',
       authSubtitle: 'Enter password to access administration.',
@@ -100,6 +107,7 @@
     setText('menu-blocks', t('menuBlocks'));
     setText('menu-stats', t('menuStats'));
     setText('btn-logout', t('logout'));
+    setText('btn-update', t('update'));
     setText('auth-title', t('authTitle'));
     setText('auth-subtitle', t('authSubtitle'));
     setText('auth-password-label', t('authPasswordLabel'));
@@ -209,30 +217,26 @@
     return payload;
   }
 
+  function showUpdateSection(version) {
+    updateAvailableLabel.textContent = `${t('newVersionAvailable')} ${version}`;
+    updateSection.style.display = 'flex';
+  }
+
+  function hideUpdateSection() {
+    updateSection.style.display = 'none';
+  }
+
   async function promptAndUpdateIfNeeded() {
     try {
       const status = await checkForUpdates();
       if (!status.hasUpdate) {
+        hideUpdateSection();
         return;
       }
 
-      const shouldUpdate = window.confirm(
-        `${t('updateFound')} (${status.latestVersion}). ` +
-        `${t('currentVersion')}: ${status.currentVersion}. ${t('askUpdateNow')}`
-      );
-
-      if (!shouldUpdate) {
-        return;
-      }
-
-      const result = await applyUpdate();
-      if (result.restartScheduled) {
-        window.alert(t('updateDoneRestart'));
-      } else {
-        window.alert(t('updateDone'));
-      }
+      showUpdateSection(status.latestVersion);
     } catch (error) {
-      console.error('[ADMIN] Erro no fluxo de atualização:', error);
+      console.error('[ADMIN] Erro ao verificar atualizacao:', error);
     }
   }
 
@@ -287,6 +291,21 @@
     } catch (error) {
       authError.style.display = 'block';
       authError.textContent = error.message || t('invalidPasswordShort');
+    }
+  });
+
+  btnUpdate.addEventListener('click', async () => {
+    try {
+      hideUpdateSection();
+      const result = await applyUpdate();
+      if (result.restartScheduled) {
+        window.alert(t('updateDoneRestart'));
+      } else {
+        window.alert(t('updateDone'));
+      }
+    } catch (error) {
+      console.error('[ADMIN] Erro ao aplicar atualizacao:', error);
+      window.alert(t('updateApplyError'));
     }
   });
 
