@@ -20,6 +20,9 @@ const CHANNEL_NAME = process.env.CHANNEL_NAME || 'Webtv framework';
 const ADMIN_PASSWORD = String(process.env.PASSWORD || process.env.password || '').trim();
 const ADMIN_COOKIE_NAME = 'tvs_admin_auth';
 const ADMIN_COOKIE_TTL_MS = 12 * 60 * 60 * 1000;
+const NOTICE_SEGMENT_FILE = path.join(__dirname, 'notice-segment.base64');
+const NOTICE_SEGMENT_DURATION_SECONDS = 6.021;
+const NOTICE_PLAYLIST_TARGET_DURATION = 7;
 const ADMIN_COOKIE_VALUE = ADMIN_PASSWORD
   ? crypto.createHash('sha256').update(`tvsabinos:${ADMIN_PASSWORD}`).digest('hex')
   : '';
@@ -44,6 +47,7 @@ let epgXmlCacheTime = 0;
 let epgParsedCache = null;
 let epgParsedCacheTime = 0;
 const EPG_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+let noticeSegmentBuffer = null;
 const activeSessions = new Map();
 let writeQueue = Promise.resolve();
 
@@ -434,13 +438,38 @@ function buildNoticePlaylist(message) {
     '#EXTM3U',
     '#EXT-X-VERSION:3',
     '#EXT-X-PLAYLIST-TYPE:VOD',
-    '#EXT-X-TARGETDURATION:6',
+    '#EXT-X-INDEPENDENT-SEGMENTS',
+    `#EXT-X-TARGETDURATION:${NOTICE_PLAYLIST_TARGET_DURATION}`,
     '#EXT-X-MEDIA-SEQUENCE:0',
-    `#EXT-X-DATERANGE:ID="notice-${Date.now()}",CLASS="tvsabinos.notice",START-DATE="${now}",DURATION=6.0,X-TVSABINOS-MESSAGE="${text}"`,
-    `#EXTINF:6.0,${text}`,
+    `#EXT-X-DATERANGE:ID="notice-${Date.now()}",CLASS="tvsabinos.notice",START-DATE="${now}",DURATION=${NOTICE_SEGMENT_DURATION_SECONDS.toFixed(3)},X-TVSABINOS-MESSAGE="${text}"`,
+    `#EXTINF:${NOTICE_SEGMENT_DURATION_SECONDS.toFixed(3)},${text}`,
     '/stream/notice.ts',
     '#EXT-X-ENDLIST',
   ].join('\n');
+}
+
+function getNoticeSegmentBuffer() {
+  if (noticeSegmentBuffer) {
+    return noticeSegmentBuffer;
+  }
+
+  try {
+    const encoded = fs.readFileSync(NOTICE_SEGMENT_FILE, 'utf8').replace(/\s+/g, '');
+    const decoded = Buffer.from(encoded, 'base64');
+    if (!decoded.length) {
+      throw new Error('Segmento de aviso vazio.');
+    }
+
+    noticeSegmentBuffer = decoded;
+    return noticeSegmentBuffer;
+  } catch (error) {
+    console.error('[STREAM] Erro ao carregar segmento de aviso:', error.message);
+
+    // Fallback mínimo para manter a resposta do endpoint, mesmo sem o asset em disco.
+    const nullPacket = Buffer.from([0x47, 0x1f, 0xff, 0x10, ...new Array(184).fill(0xff)]);
+    noticeSegmentBuffer = Buffer.concat(new Array(32).fill(nullPacket));
+    return noticeSegmentBuffer;
+  }
 }
 
 function sendNoticeAsPlaylist(res, message) {
@@ -633,12 +662,11 @@ app.get('/stream/playlist.m3u8', async (req, res) => {
 });
 
 app.get('/stream/notice.ts', (req, res) => {
-  // Segmento TS mínimo para manter resposta em formato de stream HLS.
-  const nullPacket = Buffer.from([0x47, 0x1f, 0xff, 0x10, ...new Array(184).fill(0xff)]);
-  const segment = Buffer.concat(new Array(32).fill(nullPacket));
+  const segment = getNoticeSegmentBuffer();
 
   res.setHeader('Content-Type', 'video/MP2T');
   res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Content-Length', segment.length);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.status(200).send(segment);
 });

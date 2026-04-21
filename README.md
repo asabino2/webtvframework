@@ -82,7 +82,7 @@ PORT=8080 npm start
 ## Funcionalidades
 
 - **Restream HLS**: o m3u8 e os segmentos são proxiados pelo backend, nunca expostos diretamente
-- **Respostas do stream**: `/stream/playlist.m3u8` retorna uma playlist HLS de aviso (offline/bloqueio regional), permitindo uso direto em apps IPTV
+- **Respostas do stream**: `/stream/playlist.m3u8` retorna uma playlist HLS de aviso (offline/bloqueio regional) com segmento MPEG-TS válido, compatível com apps IPTV e ffmpeg
 - **EPG em tempo real**: programa atual + próximo na sidebar, com barra de progresso
 - **Endpoint XMLTV**: proxy do XML bruto em `/epg/xmltv.xml`, no mesmo padrão do stream
 - **Administração**: painel em `/admin` com menu lateral para Bloqueio de Região e Estatísticas
