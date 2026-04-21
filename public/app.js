@@ -186,6 +186,20 @@
   let liveTimer = null;
   let channelName = 'Webtv framework';
   let appVersion = '0.0.2';
+  let faviconUrl = '';
+
+  function applyFavicon(url) {
+    if (!url) return;
+
+    let link = document.querySelector('link[rel="icon"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+
+    link.href = url;
+  }
 
   function updateDocumentTitle() {
     document.title = `${channelName} — ${t('titleLive')}`;
@@ -242,6 +256,9 @@
       if (data?.version) {
         appVersion = String(data.version);
       }
+      if (data?.faviconUrl) {
+        faviconUrl = String(data.faviconUrl);
+      }
     } catch (_) {
       // Mantém fallback local quando configuração não estiver disponível.
     }
@@ -253,6 +270,7 @@
     if (appVersionLine) {
       appVersionLine.textContent = `Webtv Framework - ${currentLang === 'en' ? 'Version' : 'Versao'} ${appVersion}`;
     }
+    applyFavicon(faviconUrl);
   }
 
   async function readStreamNotice() {

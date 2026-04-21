@@ -23,6 +23,7 @@
       languageLabel: 'Idioma',
       menuBlocks: 'Bloqueio de Regiao',
       menuStats: 'Estatisticas',
+      menuSettings: 'Configuracoes Gerais',
       logout: 'Sair',
       update: 'Atualizar',
       newVersionAvailable: 'Nova versao disponivel',
@@ -33,6 +34,7 @@
       authSubmit: 'Entrar',
       viewBlocks: 'Bloqueio de Regiao',
       viewStats: 'Estatisticas',
+      viewSettings: 'Configuracoes Gerais',
       authStatusError: 'Falha ao consultar status da autenticacao',
       invalidPassword: 'Senha invalida',
       updateCheckError: 'Falha ao verificar atualizacoes.',
@@ -51,6 +53,7 @@
       languageLabel: 'Language',
       menuBlocks: 'Region Blocking',
       menuStats: 'Statistics',
+      menuSettings: 'General Settings',
       logout: 'Sign out',
       update: 'Update',
       newVersionAvailable: 'New version available',
@@ -61,6 +64,7 @@
       authSubmit: 'Sign in',
       viewBlocks: 'Region Blocking',
       viewStats: 'Statistics',
+      viewSettings: 'General Settings',
       authStatusError: 'Failed to load authentication status',
       invalidPassword: 'Invalid password',
       updateCheckError: 'Failed to check updates.',
@@ -88,10 +92,13 @@
   const routeByView = {
     blocks: '/bloqueios',
     stats: '/estatisticas',
+    settings: '/configuracoes-gerais',
   };
 
   function titleByView(view) {
-    return view === 'stats' ? t('viewStats') : t('viewBlocks');
+    if (view === 'stats') return t('viewStats');
+    if (view === 'settings') return t('viewSettings');
+    return t('viewBlocks');
   }
 
   function applyStaticTranslations() {
@@ -106,6 +113,7 @@
     setText('admin-language-label', t('languageLabel'));
     setText('menu-blocks', t('menuBlocks'));
     setText('menu-stats', t('menuStats'));
+    setText('menu-settings', t('menuSettings'));
     setText('btn-logout', t('logout'));
     setText('btn-update', t('update'));
     setText('auth-title', t('authTitle'));

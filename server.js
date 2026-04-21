@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const VISITS_FILE = path.join(DATA_DIR, 'visits.json');
 const BLOCKS_FILE = path.join(DATA_DIR, 'region-blocks.json');
+const GENERAL_SETTINGS_FILE = path.join(DATA_DIR, 'general-settings.json');
 const VIEWER_TTL_MS = 45 * 1000;
 const SESSION_PING_MS = 20 * 1000;
 const CHANNEL_NAME = process.env.CHANNEL_NAME || 'Webtv framework';
@@ -37,8 +38,9 @@ let updatePromise = null;
 
 // ── Configurações da fonte local ────────────────────────────────────────────
 const UPSTREAM_BASE = process.env.UPSTREAM_BASE || 'http://192.168.1.186:8409';
-const M3U8_URL = process.env.M3U8_URL || `${UPSTREAM_BASE}/iptv/channel/2.m3u8?mode=segmenter`;
-const EPG_URL = process.env.EPG_URL || `${UPSTREAM_BASE}/iptv/xmltv.xml`;
+const DEFAULT_M3U8_URL = process.env.M3U8_URL || `${UPSTREAM_BASE}/iptv/channel/2.m3u8?mode=segmenter`;
+const DEFAULT_EPG_URL = process.env.EPG_URL || `${UPSTREAM_BASE}/iptv/xmltv.xml`;
+const DEFAULT_FAVICON_URL = process.env.FAVICON_URL || '';
 const STREAM_CHANNEL_ID = process.env.STREAM_CHANNEL_ID || null;
 
 // Cache do EPG para evitar requisições repetidas
@@ -64,6 +66,63 @@ function ensureDataStore() {
   if (!fs.existsSync(BLOCKS_FILE)) {
     fs.writeFileSync(BLOCKS_FILE, '[]', 'utf8');
   }
+  if (!fs.existsSync(GENERAL_SETTINGS_FILE)) {
+    fs.writeFileSync(GENERAL_SETTINGS_FILE, '{}', 'utf8');
+  }
+}
+
+function sanitizeOptionalUrl(value) {
+  const str = String(value || '').trim();
+  if (!str) return '';
+
+  try {
+    const url = new URL(str);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return '';
+    }
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
+function readGeneralSettings() {
+  ensureDataStore();
+  try {
+    const raw = JSON.parse(fs.readFileSync(GENERAL_SETTINGS_FILE, 'utf8'));
+    return {
+      streamUrl: sanitizeOptionalUrl(raw?.streamUrl),
+      epgUrl: sanitizeOptionalUrl(raw?.epgUrl),
+      faviconUrl: sanitizeOptionalUrl(raw?.faviconUrl),
+    };
+  } catch {
+    return {
+      streamUrl: '',
+      epgUrl: '',
+      faviconUrl: '',
+    };
+  }
+}
+
+async function writeGeneralSettings(settings) {
+  ensureDataStore();
+  const payload = {
+    streamUrl: sanitizeOptionalUrl(settings?.streamUrl),
+    epgUrl: sanitizeOptionalUrl(settings?.epgUrl),
+    faviconUrl: sanitizeOptionalUrl(settings?.faviconUrl),
+  };
+
+  await fs.promises.writeFile(GENERAL_SETTINGS_FILE, JSON.stringify(payload, null, 2), 'utf8');
+  return payload;
+}
+
+function getGeneralRuntimeConfig() {
+  const settings = readGeneralSettings();
+  return {
+    streamUrl: settings.streamUrl || DEFAULT_M3U8_URL,
+    epgUrl: settings.epgUrl || DEFAULT_EPG_URL,
+    faviconUrl: settings.faviconUrl || DEFAULT_FAVICON_URL,
+  };
 }
 
 function readVisits() {
@@ -555,7 +614,8 @@ async function fetchEpgXml() {
   const now = Date.now();
   if (epgXmlCache && now - epgXmlCacheTime < EPG_CACHE_TTL) return epgXmlCache;
 
-  const response = await axios.get(EPG_URL, { responseType: 'text', timeout: 10000 });
+  const { epgUrl } = getGeneralRuntimeConfig();
+  const response = await axios.get(epgUrl, { responseType: 'text', timeout: 10000 });
   epgXmlCache = response.data;
   epgXmlCacheTime = now;
   epgParsedCache = null;
@@ -626,7 +686,8 @@ app.get('/stream/playlist.m3u8', async (req, res) => {
       return;
     }
 
-    const upstream = await axios.get(M3U8_URL, { responseType: 'text', timeout: 10000 });
+    const { streamUrl } = getGeneralRuntimeConfig();
+    const upstream = await axios.get(streamUrl, { responseType: 'text', timeout: 10000 });
     let content = upstream.data;
 
     // Reescreve linhas que são segmentos .ts ou sub-playlists .m3u8
@@ -641,7 +702,7 @@ app.get('/stream/playlist.m3u8', async (req, res) => {
         absoluteUrl = `${UPSTREAM_BASE}${trimmed}`;
       } else {
         // URL relativa — resolve a partir do diretório do m3u8
-        const base = M3U8_URL.split('?')[0].replace(/\/[^/]+$/, '/');
+        const base = streamUrl.split('?')[0].replace(/\/[^/]+$/, '/');
         absoluteUrl = base + trimmed;
       }
 
@@ -737,9 +798,11 @@ app.get('/epg/xmltv.xml', async (req, res) => {
 });
 
 app.get('/api/public-config', (req, res) => {
+  const runtimeConfig = getGeneralRuntimeConfig();
   res.json({
     channelName: CHANNEL_NAME,
     version: getLocalAppVersion(),
+    faviconUrl: runtimeConfig.faviconUrl,
   });
 });
 
@@ -804,6 +867,61 @@ app.post('/api/admin/update/apply', requireAdminAuth, async (req, res) => {
     updatePromise = null;
     console.error('[ADMIN] Erro ao aplicar atualização:', error.message);
     res.status(500).json({ error: 'Não foi possível aplicar a atualização automática.' });
+  }
+});
+
+app.get('/api/admin/general-settings', requireAdminAuth, (req, res) => {
+  const saved = readGeneralSettings();
+  const runtime = getGeneralRuntimeConfig();
+
+  res.json({
+    streamUrl: saved.streamUrl,
+    epgUrl: saved.epgUrl,
+    faviconUrl: saved.faviconUrl,
+    effectiveStreamUrl: runtime.streamUrl,
+    effectiveEpgUrl: runtime.epgUrl,
+    effectiveFaviconUrl: runtime.faviconUrl,
+  });
+});
+
+app.post('/api/admin/general-settings', requireAdminAuth, async (req, res) => {
+  const payload = {
+    streamUrl: req.body?.streamUrl,
+    epgUrl: req.body?.epgUrl,
+    faviconUrl: req.body?.faviconUrl,
+  };
+
+  const invalidField = ['streamUrl', 'epgUrl', 'faviconUrl'].find((field) => {
+    const value = String(payload[field] || '').trim();
+    return value && !sanitizeOptionalUrl(value);
+  });
+
+  if (invalidField) {
+    return res.status(400).json({ error: `Campo ${invalidField} invalido. Use URL http(s) valida.` });
+  }
+
+  try {
+    const saved = await writeGeneralSettings(payload);
+
+    epgXmlCache = null;
+    epgXmlCacheTime = 0;
+    epgParsedCache = null;
+    epgParsedCacheTime = 0;
+
+    const responsePayload = {
+      message: 'Configuracoes salvas com sucesso. O aplicativo sera reiniciado.',
+      restartScheduled: true,
+      settings: saved,
+    };
+
+    res.json(responsePayload);
+
+    setTimeout(() => {
+      process.exit(0);
+    }, 1500);
+  } catch (error) {
+    console.error('[ADMIN] Erro ao salvar configuracoes gerais:', error.message);
+    res.status(500).json({ error: 'Nao foi possivel salvar as configuracoes gerais.' });
   }
 });
 
@@ -1035,6 +1153,10 @@ app.get('/estatisticas', requireAdminPage, (req, res) => {
 
 app.get('/bloqueios', requireAdminPage, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'blocks.html'));
+});
+
+app.get('/configuracoes-gerais', requireAdminPage, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'settings.html'));
 });
 
 app.get('*', (req, res) => {

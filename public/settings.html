@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuracoes Gerais - Webtv framework</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .settings-page {
+      max-width: 980px;
+      margin: 40px auto;
+      padding: 0 20px 40px;
+    }
+
+    .settings-header {
+      margin-bottom: 20px;
+    }
+
+    .settings-header h1 {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+    }
+
+    .settings-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .settings-form {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.9rem;
+      color: #d9dde4;
+    }
+
+    .field input {
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      color: #fff;
+      padding: 10px 12px;
+      font: inherit;
+      width: 100%;
+    }
+
+    .btn-primary {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #ffca28;
+      color: #1a1a1a;
+      width: fit-content;
+    }
+
+    .muted {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    .status-message {
+      margin: 8px 0 0;
+      font-size: 0.92rem;
+    }
+
+    .status-message.error {
+      color: #ffadad;
+    }
+
+    .status-message.success {
+      color: #b9fbc0;
+    }
+  </style>
+</head>
+<body>
+  <main class="settings-page">
+    <header class="settings-header">
+      <h1 id="settings-title">Configuracoes Gerais</h1>
+      <p class="muted" id="settings-subtitle">Defina as URLs base do stream/EPG e o favicon do site principal.</p>
+    </header>
+
+    <section class="settings-card">
+      <form id="settings-form" class="settings-form">
+        <div class="field">
+          <label for="stream-url" id="label-stream-url">URL do stream original (M3U8)</label>
+          <input id="stream-url" name="streamUrl" type="url" placeholder="https://exemplo.com/live/playlist.m3u8" />
+          <p class="muted" id="stream-help">Se vazio, usa a variavel de ambiente M3U8_URL.</p>
+        </div>
+
+        <div class="field">
+          <label for="epg-url" id="label-epg-url">URL do EPG original (XMLTV)</label>
+          <input id="epg-url" name="epgUrl" type="url" placeholder="https://exemplo.com/epg/xmltv.xml" />
+          <p class="muted" id="epg-help">Se vazio, usa a variavel de ambiente EPG_URL.</p>
+        </div>
+
+        <div class="field">
+          <label for="favicon-url" id="label-favicon-url">URL do favicon do site principal</label>
+          <input id="favicon-url" name="faviconUrl" type="url" placeholder="https://exemplo.com/favicon.ico" />
+          <p class="muted" id="favicon-help">Se vazio, usa a variavel de ambiente FAVICON_URL.</p>
+        </div>
+
+        <button class="btn-primary" type="submit" id="btn-save-settings">Salvar configuracoes</button>
+        <p id="settings-status" class="status-message" style="display:none"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="/settings.js"></script>
+</body>
+</html>
