@@ -184,9 +184,12 @@
   let analyticsSessionId = null;
   let heartbeatTimer = null;
   let liveTimer = null;
+  let streamStatePollTimer = null;
+  let streamStateChannel = null;
   let channelName = 'Webtv framework';
   let appVersion = '0.0.2';
   let faviconUrl = '';
+  let streamStateVersion = 0;
 
   function applyFavicon(url) {
     if (!url) return;
@@ -246,9 +249,9 @@
     updateDocumentTitle();
   }
 
-  async function loadPublicConfig() {
+  async function loadPublicConfig(options = {}) {
     try {
-      const response = await fetch('/api/public-config');
+      const response = await fetch('/api/public-config', { cache: options.noCache ? 'no-store' : 'default' });
       const data = await response.json();
       if (data?.channelName) {
         channelName = String(data.channelName);
@@ -259,18 +262,44 @@
       if (data?.faviconUrl) {
         faviconUrl = String(data.faviconUrl);
       }
+
+      updateDocumentTitle();
+      if (logoChannelName) {
+        logoChannelName.textContent = channelName;
+      }
+      if (appVersionLine) {
+        appVersionLine.textContent = `Webtv Framework - ${currentLang === 'en' ? 'Version' : 'Versao'} ${appVersion}`;
+      }
+      applyFavicon(faviconUrl);
+
+      return data;
     } catch (_) {
       // Mantém fallback local quando configuração não estiver disponível.
     }
 
-    updateDocumentTitle();
-    if (logoChannelName) {
-      logoChannelName.textContent = channelName;
+    return null;
+  }
+
+  async function pollStreamState() {
+    try {
+      const previousVersion = streamStateVersion;
+      const data = await loadPublicConfig({ noCache: true });
+      if (!data?.streamStateVersion) {
+        return;
+      }
+
+      const nextVersion = Number(data.streamStateVersion) || 0;
+      if (previousVersion && nextVersion !== previousVersion) {
+        streamStateVersion = nextVersion;
+        initPlayer();
+        updateSidebarEpg();
+        return;
+      }
+
+      streamStateVersion = nextVersion;
+    } catch (_) {
+      // Ignora falhas transitórias de polling.
     }
-    if (appVersionLine) {
-      appVersionLine.textContent = `Webtv Framework - ${currentLang === 'en' ? 'Version' : 'Versao'} ${appVersion}`;
-    }
-    applyFavicon(faviconUrl);
   }
 
   async function readStreamNotice() {
@@ -605,6 +634,15 @@
   function endAnalyticsSession() {
     if (!analyticsSessionId) return;
 
+    if (streamStatePollTimer) {
+      clearInterval(streamStatePollTimer);
+      streamStatePollTimer = null;
+    }
+    if (streamStateChannel) {
+      streamStateChannel.close();
+      streamStateChannel = null;
+    }
+
     const payload = JSON.stringify({ sessionId: analyticsSessionId });
     if (navigator.sendBeacon) {
       const blob = new Blob([payload], { type: 'application/json' });
@@ -850,10 +888,19 @@
   // ── Inicializa ────────────────────────────────────────────────────────────
   applyStaticTranslations();
 
-  loadPublicConfig().finally(() => {
+  loadPublicConfig().then((data) => {
+    streamStateVersion = Number(data?.streamStateVersion) || 0;
+  }).catch(() => {}).finally(() => {
     applyStaticTranslations();
     initPlayer();
     startAnalyticsSession();
+    if ('BroadcastChannel' in window) {
+      streamStateChannel = new BroadcastChannel('webtv-stream-state');
+      streamStateChannel.addEventListener('message', () => {
+        pollStreamState();
+      });
+    }
+    streamStatePollTimer = window.setInterval(pollStreamState, 2000);
   });
 
 })();

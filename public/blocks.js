@@ -77,6 +77,7 @@
   }
 
   let currentLang = getLang();
+  const streamStateChannel = 'BroadcastChannel' in window ? new BroadcastChannel('webtv-stream-state') : null;
 
   function t(key) {
     return i18n[currentLang][key] || i18n.pt[key] || key;
@@ -149,6 +150,10 @@
       .replace(/"/g, '&quot;');
   }
 
+  function notifyStreamStateChanged() {
+    streamStateChannel?.postMessage({ type: 'stream-state-changed' });
+  }
+
   async function loadBlocks() {
     const response = await fetch('/api/blocks');
     const blocks = await response.json();
@@ -199,6 +204,7 @@
     }
 
     form.reset();
+    notifyStreamStateChanged();
     await loadBlocks();
   });
 
@@ -220,6 +226,7 @@
       return;
     }
 
+    notifyStreamStateChanged();
     await loadBlocks();
   });
 

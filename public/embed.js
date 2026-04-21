@@ -15,6 +15,18 @@
   let hls = null;
   let analyticsSessionId = null;
   let heartbeatTimer = null;
+  let streamStatePollTimer = null;
+  let streamStateChannel = null;
+  let streamStateVersion = 0;
+
+  async function loadPublicConfig() {
+    try {
+      const response = await fetch('/api/public-config', { cache: 'no-store' });
+      return await response.json();
+    } catch (_) {
+      return null;
+    }
+  }
 
   function showLoading(show) {
     loading.style.display = show ? 'flex' : 'none';
@@ -189,6 +201,14 @@
       clearInterval(heartbeatTimer);
       heartbeatTimer = null;
     }
+    if (streamStatePollTimer) {
+      clearInterval(streamStatePollTimer);
+      streamStatePollTimer = null;
+    }
+    if (streamStateChannel) {
+      streamStateChannel.close();
+      streamStateChannel = null;
+    }
 
     const payload = JSON.stringify({ sessionId: analyticsSessionId });
     if (navigator.sendBeacon) {
@@ -202,6 +222,30 @@
     if (document.visibilityState === 'hidden') endAnalyticsSession();
   });
 
+  async function pollStreamState() {
+    const data = await loadPublicConfig();
+    const nextVersion = Number(data?.streamStateVersion) || 0;
+    if (!nextVersion) return;
+
+    if (streamStateVersion && nextVersion !== streamStateVersion) {
+      streamStateVersion = nextVersion;
+      initPlayer();
+      return;
+    }
+
+    streamStateVersion = nextVersion;
+  }
+
   initPlayer();
   startAnalyticsSession();
+  loadPublicConfig().then((data) => {
+    streamStateVersion = Number(data?.streamStateVersion) || 0;
+  }).catch(() => {});
+  if ('BroadcastChannel' in window) {
+    streamStateChannel = new BroadcastChannel('webtv-stream-state');
+    streamStateChannel.addEventListener('message', () => {
+      pollStreamState();
+    });
+  }
+  streamStatePollTimer = window.setInterval(pollStreamState, 2000);
 })();

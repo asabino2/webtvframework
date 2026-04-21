@@ -52,6 +52,7 @@ const EPG_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 let noticeSegmentBuffer = null;
 const activeSessions = new Map();
 let writeQueue = Promise.resolve();
+let streamStateVersion = 1;
 
 app.set('trust proxy', true);
 app.use(express.json({ limit: '256kb' }));
@@ -123,6 +124,11 @@ function getGeneralRuntimeConfig() {
     epgUrl: settings.epgUrl || DEFAULT_EPG_URL,
     faviconUrl: settings.faviconUrl || DEFAULT_FAVICON_URL,
   };
+}
+
+function bumpStreamStateVersion() {
+  streamStateVersion += 1;
+  return streamStateVersion;
 }
 
 function readVisits() {
@@ -344,13 +350,44 @@ async function updateApplicationFromGitHub() {
   };
 }
 
-function getCurrentProgrammeForStream(programmes) {
+function getPreferredChannelId(channels, programmes) {
+  if (STREAM_CHANNEL_ID) {
+    return STREAM_CHANNEL_ID;
+  }
+
+  const normalizedChannelName = normalizeText(CHANNEL_NAME);
+  const matchingChannel = (channels || []).find((channel) => {
+    const channelName = normalizeText(channel?.name);
+    return channelName && normalizedChannelName && (
+      channelName.includes(normalizedChannelName) || normalizedChannelName.includes(channelName)
+    );
+  });
+
+  if (matchingChannel?.id) {
+    return matchingChannel.id;
+  }
+
+  const activeChannelIds = Array.from(new Set(
+    (programmes || [])
+      .filter((programme) => programme?.channelId)
+      .map((programme) => programme.channelId)
+  ));
+
+  if (activeChannelIds.length === 1) {
+    return activeChannelIds[0];
+  }
+
+  return null;
+}
+
+function getCurrentProgrammeForStream(channels, programmes) {
   const now = new Date();
   const current = programmes.filter(p => p.start <= now && p.stop > now);
   if (!current.length) return null;
 
-  if (STREAM_CHANNEL_ID) {
-    return current.find(p => p.channelId === STREAM_CHANNEL_ID) || null;
+  const preferredChannelId = getPreferredChannelId(channels, current);
+  if (preferredChannelId) {
+    return current.find(p => p.channelId === preferredChannelId) || null;
   }
 
   return current.sort((a, b) => a.start - b.start)[0] || null;
@@ -386,8 +423,8 @@ function isProgrammeBlocked(programme, block, location) {
 }
 
 async function getGeoBlockForRequest(req) {
-  const { programmes } = await fetchEpg();
-  const current = getCurrentProgrammeForStream(programmes);
+  const { channels, programmes } = await fetchEpg();
+  const current = getCurrentProgrammeForStream(channels, programmes);
   if (!current) return null;
 
   const location = getLocationFromIp(getClientIp(req));
@@ -810,10 +847,12 @@ app.get('/epg/xmltv.xml', async (req, res) => {
 
 app.get('/api/public-config', (req, res) => {
   const runtimeConfig = getGeneralRuntimeConfig();
+  res.setHeader('Cache-Control', 'no-store');
   res.json({
     channelName: CHANNEL_NAME,
     version: getLocalAppVersion(),
     faviconUrl: runtimeConfig.faviconUrl,
+    streamStateVersion,
   });
 });
 
@@ -913,6 +952,7 @@ app.post('/api/admin/general-settings', requireAdminAuth, async (req, res) => {
 
   try {
     const saved = await writeGeneralSettings(payload);
+    bumpStreamStateVersion();
 
     epgXmlCache = null;
     epgXmlCacheTime = 0;
@@ -1042,12 +1082,13 @@ app.get('/api/analytics/summary', requireAdminAuth, (req, res) => {
 app.get('/api/epg/now', async (req, res) => {
   try {
     const { channels, programmes } = await fetchEpg();
-    const channelId = req.query.channelId; // opcional: filtrar por canal específico
+    const requestedChannelId = req.query.channelId; // opcional: filtrar por canal específico
+    const preferredChannelId = requestedChannelId || getPreferredChannelId(channels, programmes);
 
     const now = new Date();
 
     const current = programmes.filter(p =>
-      (!channelId || p.channelId === channelId) &&
+      (!preferredChannelId || p.channelId === preferredChannelId) &&
       p.start <= now && p.stop > now
     );
 
@@ -1145,6 +1186,7 @@ app.post('/api/blocks', requireAdminAuth, async (req, res) => {
   const blocks = readRegionBlocks();
   blocks.push(block);
   await writeRegionBlocks(blocks);
+  bumpStreamStateVersion();
   res.status(201).json(block);
 });
 
@@ -1157,6 +1199,7 @@ app.delete('/api/blocks/:id', requireAdminAuth, async (req, res) => {
   }
 
   await writeRegionBlocks(nextBlocks);
+  bumpStreamStateVersion();
   res.status(204).end();
 });
 
