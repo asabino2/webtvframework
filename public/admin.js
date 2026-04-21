@@ -24,6 +24,7 @@
       menuBlocks: 'Bloqueio de Regiao',
       menuStats: 'Estatisticas',
       menuSettings: 'Configuracoes Gerais',
+      menuEmbed: 'Embed',
       logout: 'Sair',
       update: 'Atualizar',
       newVersionAvailable: 'Nova versao disponivel',
@@ -35,6 +36,7 @@
       viewBlocks: 'Bloqueio de Regiao',
       viewStats: 'Estatisticas',
       viewSettings: 'Configuracoes Gerais',
+      viewEmbed: 'Embed',
       authStatusError: 'Falha ao consultar status da autenticacao',
       invalidPassword: 'Senha invalida',
       updateCheckError: 'Falha ao verificar atualizacoes.',
@@ -54,6 +56,7 @@
       menuBlocks: 'Region Blocking',
       menuStats: 'Statistics',
       menuSettings: 'General Settings',
+      menuEmbed: 'Embed',
       logout: 'Sign out',
       update: 'Update',
       newVersionAvailable: 'New version available',
@@ -65,6 +68,7 @@
       viewBlocks: 'Region Blocking',
       viewStats: 'Statistics',
       viewSettings: 'General Settings',
+      viewEmbed: 'Embed',
       authStatusError: 'Failed to load authentication status',
       invalidPassword: 'Invalid password',
       updateCheckError: 'Failed to check updates.',
@@ -93,11 +97,13 @@
     blocks: '/bloqueios',
     stats: '/estatisticas',
     settings: '/configuracoes-gerais',
+    embed: '/embed-opcao',
   };
 
   function titleByView(view) {
     if (view === 'stats') return t('viewStats');
     if (view === 'settings') return t('viewSettings');
+    if (view === 'embed') return t('viewEmbed');
     return t('viewBlocks');
   }
 
@@ -114,6 +120,7 @@
     setText('menu-blocks', t('menuBlocks'));
     setText('menu-stats', t('menuStats'));
     setText('menu-settings', t('menuSettings'));
+    setText('menu-embed', t('menuEmbed'));
     setText('btn-logout', t('logout'));
     setText('btn-update', t('update'));
     setText('auth-title', t('authTitle'));

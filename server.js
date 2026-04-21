@@ -407,6 +407,16 @@ function buildVisitEntry(req, sessionId) {
   const parsedUa = parser.getResult();
   const ip = getClientIp(req);
   const location = getLocationFromIp(ip);
+  const rawReferrer = String(req.body?.referrer || req.headers.referer || '').trim();
+  let referrer = '';
+
+  if (rawReferrer) {
+    try {
+      referrer = new URL(rawReferrer).origin;
+    } catch {
+      referrer = rawReferrer;
+    }
+  }
 
   return {
     sessionId,
@@ -419,6 +429,7 @@ function buildVisitEntry(req, sessionId) {
     state: location.region,
     city: location.city,
     page: req.body?.page || '/',
+    referrer,
   };
 }
 
@@ -1004,6 +1015,14 @@ app.get('/api/analytics/summary', requireAdminAuth, (req, res) => {
   const recentVisits = visits.slice(-25).reverse();
   const uniqueIps24h = new Set(last24Hours.map(item => item.ip)).size;
 
+  const topReferrers = summarizeCounts(
+    last24Hours.map((item) => ({
+      ...item,
+      referrerLabel: String(item.referrer || 'Direto').trim() || 'Direto',
+    })),
+    'referrerLabel'
+  );
+
   res.json({
     currentViewers: getCurrentViewerCount(),
     totalVisits: visits.length,
@@ -1013,6 +1032,7 @@ app.get('/api/analytics/summary', requireAdminAuth, (req, res) => {
     topOperatingSystems: summarizeCounts(last24Hours, 'operatingSystem'),
     topCountries: summarizeCounts(last24Hours, 'country'),
     topCities: summarizeCounts(last24Hours, 'city'),
+    topReferrers,
     hourlyVisits: buildHourlySeries(last24Hours),
     recentVisits,
   });
@@ -1157,6 +1177,14 @@ app.get('/bloqueios', requireAdminPage, (req, res) => {
 
 app.get('/configuracoes-gerais', requireAdminPage, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'settings.html'));
+});
+
+app.get('/embed-opcao', requireAdminPage, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'embed-options.html'));
+});
+
+app.get('/embed', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'embed.html'));
 });
 
 app.get('*', (req, res) => {

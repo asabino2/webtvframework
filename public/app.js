@@ -560,7 +560,10 @@
       const response = await fetch('/api/analytics/session/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ page: window.location.pathname }),
+        body: JSON.stringify({
+          page: window.location.pathname,
+          referrer: document.referrer,
+        }),
       });
       const data = await response.json();
       analyticsSessionId = data.sessionId;

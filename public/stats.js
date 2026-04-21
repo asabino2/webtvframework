@@ -12,6 +12,7 @@
   const topOs = document.getElementById('top-os');
   const topCountries = document.getElementById('top-countries');
   const topCities = document.getElementById('top-cities');
+  const topReferrers = document.getElementById('top-referrers');
 
   const LANG_KEY = 'webtv_lang';
   const i18n = {
@@ -42,6 +43,10 @@
       thSystem: 'Sistema',
       thDevice: 'Dispositivo',
       thLocation: 'Localizacao',
+      thReferrer: 'Referrer',
+      panelReferrers: 'Referrer',
+      panelReferrersSub: 'Sites de origem',
+      directAccess: 'Direto',
       emptyData: 'Ainda sem dados suficientes.',
       emptyVisits: 'Nenhuma visita registrada.',
       updatedAt: 'Atualizado as',
@@ -74,6 +79,10 @@
       thSystem: 'System',
       thDevice: 'Device',
       thLocation: 'Location',
+      thReferrer: 'Referrer',
+      panelReferrers: 'Referrer',
+      panelReferrersSub: 'Source sites',
+      directAccess: 'Direct',
       emptyData: 'Not enough data yet.',
       emptyVisits: 'No visits recorded.',
       updatedAt: 'Updated at',
@@ -122,6 +131,8 @@
     setText('panel-countries-subtitle', t('panelOrigin'));
     setText('panel-cities-title', t('panelCities'));
     setText('panel-cities-subtitle', t('panelOrigin'));
+    setText('panel-referrers-title', t('panelReferrers'));
+    setText('panel-referrers-subtitle', t('panelReferrersSub'));
     setText('panel-recent-title', t('panelRecent'));
     setText('panel-recent-subtitle', t('panelRecentSub'));
     setText('th-when', t('thWhen'));
@@ -129,6 +140,7 @@
     setText('th-system', t('thSystem'));
     setText('th-device', t('thDevice'));
     setText('th-location', t('thLocation'));
+    setText('th-referrer', t('thReferrer'));
 
     if (updatedAt && !updatedAt.textContent) {
       updatedAt.textContent = t('updating');
@@ -178,7 +190,7 @@
 
   function renderRecentVisits(items) {
     if (!items || !items.length) {
-      recentVisits.innerHTML = `<tr><td colspan="6" class="empty-state">${t('emptyVisits')}</td></tr>`;
+      recentVisits.innerHTML = `<tr><td colspan="7" class="empty-state">${t('emptyVisits')}</td></tr>`;
       return;
     }
 
@@ -190,6 +202,7 @@
         <td>${escapeHtml(item.operatingSystem)}</td>
         <td>${escapeHtml(item.device)}</td>
         <td>${escapeHtml(`${item.city}, ${item.state}, ${item.country}`)}</td>
+        <td>${escapeHtml(item.referrer || t('directAccess'))}</td>
       </tr>
     `).join('');
   }
@@ -217,6 +230,7 @@
     renderPills(topOs, data.topOperatingSystems);
     renderPills(topCountries, data.topCountries);
     renderPills(topCities, data.topCities);
+    renderPills(topReferrers, data.topReferrers);
     renderRecentVisits(data.recentVisits);
   }
 

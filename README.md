@@ -109,6 +109,40 @@ Exemplo de `general-settings.json`:
 - `GET /api/admin/general-settings`: retorna valores salvos e valores efetivos (com fallback para env)
 - `POST /api/admin/general-settings`: salva configurações e agenda restart da aplicação
 
+### Embed do player
+
+Você pode incorporar o player em outros sites usando a rota pública:
+
+- `GET /embed`
+
+No painel administrativo, existe a opção **Embed** (rota `/embed-opcao`) para copiar automaticamente a URL e o snippet de iframe.
+
+Exemplo de iframe:
+
+```html
+<iframe
+    src="https://SEU_DOMINIO/embed"
+    width="100%"
+    height="560"
+    style="border:0;"
+    allow="autoplay; fullscreen"
+    allowfullscreen
+    loading="lazy"
+></iframe>
+```
+
+O embed mantém os mesmos recursos do player principal, incluindo:
+
+- Google Cast
+- Bloqueio regional
+- Restream HLS via backend
+
+Analytics no embed:
+
+- Conta como audiência em tempo real
+- Conta para visitas e estatísticas gerais
+- Registra `referrer` (site de origem), quando disponível
+
 Para alterar a porta do servidor:
 
 ```bash
@@ -123,7 +157,9 @@ PORT=8080 npm start
 - **Endpoint XMLTV**: proxy do XML bruto em `/epg/xmltv.xml`, no mesmo padrão do stream
 - **Administração**: painel em `/admin` com menu lateral para Bloqueio de Região e Estatísticas
 - **Configurações Gerais**: painel admin com stream URL, EPG URL e favicon URL persistidos em `/app/data/general-settings.json`
+- **Embed**: player incorporável em `/embed` com opção de cópia no admin em `/embed-opcao`
 - **Atualização no painel**: botão **Atualizar** aparece somente quando existir nova versão, com aviso de versão disponível
+- **Analytics por origem**: estatísticas exibem `referrer` (quando aplicável), incluindo acessos via embed
 - **Bloqueio regional por atração**: cadastro em `/bloqueios`; quando o programa atual estiver bloqueado para a região, o stream retorna mensagem de bloqueio
 - **Grade completa**: exibe 24h de programação num modal elegante com destaque para o programa ao vivo
 - **Player**: play/pause, controle de volume, mudo e tela cheia (duplo clique também ativa)
