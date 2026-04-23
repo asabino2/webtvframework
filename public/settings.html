@@ -92,11 +92,23 @@
   <main class="settings-page">
     <header class="settings-header">
       <h1 id="settings-title">Configuracoes Gerais</h1>
-      <p class="muted" id="settings-subtitle">Defina as URLs base do stream e do EPG (XMLTV).</p>
+      <p class="muted" id="settings-subtitle">Defina nome do canal e URLs base do stream/EPG.</p>
     </header>
 
     <section class="settings-card">
       <form id="settings-form" class="settings-form">
+        <div class="field">
+          <label for="channel-name" id="label-channel-name">Nome do canal</label>
+          <input id="channel-name" name="channelName" type="text" maxlength="120" placeholder="Webtv framework" />
+          <p class="muted" id="channel-name-help">Se vazio, usa a variavel de ambiente CHANNEL_NAME.</p>
+        </div>
+
+        <div class="field">
+          <label for="favicon-url" id="label-favicon-url">URL do favicon e icone do canal</label>
+          <input id="favicon-url" name="faviconUrl" type="url" placeholder="https://exemplo.com/favicon.ico" />
+          <p class="muted" id="favicon-help">Se vazio, usa a variavel de ambiente FAVICON_URL.</p>
+        </div>
+
         <div class="field">
           <label for="stream-url" id="label-stream-url">URL do stream original (M3U8)</label>
           <input id="stream-url" name="streamUrl" type="url" placeholder="https://exemplo.com/live/playlist.m3u8" />

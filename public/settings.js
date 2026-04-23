@@ -9,7 +9,11 @@
     pt: {
       title: 'Configuracoes Gerais',
       pageTitle: 'Configuracoes Gerais',
-      subtitle: 'Defina as URLs base do stream e do EPG (XMLTV).',
+      subtitle: 'Defina nome do canal e URLs base do stream/EPG.',
+      channelNameLabel: 'Nome do canal',
+      channelNameHelp: 'Se vazio, usa a variavel de ambiente CHANNEL_NAME.',
+      faviconLabel: 'URL do favicon e icone do canal',
+      faviconHelp: 'Se vazio, usa a variavel de ambiente FAVICON_URL.',
       streamLabel: 'URL do stream original (M3U8)',
       epgLabel: 'URL do EPG original (XMLTV)',
       streamHelp: 'Se vazio, usa a variavel de ambiente M3U8_URL.',
@@ -22,7 +26,11 @@
     en: {
       title: 'General Settings',
       pageTitle: 'General Settings',
-      subtitle: 'Set source stream and EPG (XMLTV) URLs.',
+      subtitle: 'Set channel name and source stream/EPG URLs.',
+      channelNameLabel: 'Channel name',
+      channelNameHelp: 'If empty, uses environment variable CHANNEL_NAME.',
+      faviconLabel: 'Favicon and channel icon URL',
+      faviconHelp: 'If empty, uses environment variable FAVICON_URL.',
       streamLabel: 'Original stream URL (M3U8)',
       epgLabel: 'Original EPG URL (XMLTV)',
       streamHelp: 'If empty, uses environment variable M3U8_URL.',
@@ -55,6 +63,10 @@
 
     setText('settings-title', t('title'));
     setText('settings-subtitle', t('subtitle'));
+    setText('label-channel-name', t('channelNameLabel'));
+    setText('channel-name-help', t('channelNameHelp'));
+    setText('label-favicon-url', t('faviconLabel'));
+    setText('favicon-help', t('faviconHelp'));
     setText('label-stream-url', t('streamLabel'));
     setText('label-epg-url', t('epgLabel'));
     setText('stream-help', t('streamHelp'));
@@ -76,6 +88,8 @@
       throw new Error(payload.error || t('loadError'));
     }
 
+    form.channelName.value = payload.channelName || '';
+    form.faviconUrl.value = payload.faviconUrl || '';
     form.streamUrl.value = payload.streamUrl || '';
     form.epgUrl.value = payload.epgUrl || '';
   }
@@ -85,6 +99,8 @@
     statusEl.style.display = 'none';
 
     const payload = {
+      channelName: form.channelName.value,
+      faviconUrl: form.faviconUrl.value,
       streamUrl: form.streamUrl.value,
       epgUrl: form.epgUrl.value,
     };

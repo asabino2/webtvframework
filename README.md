@@ -2,7 +2,7 @@
 
 Interface web para exibição do canal ao vivo com grade EPG.
 
-Versão atual: **1.1.0**
+Versão atual: **1.1.1**
 
 ## Estrutura
 

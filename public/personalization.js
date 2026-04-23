@@ -11,12 +11,10 @@
     pt: {
       title: 'Personalizacao da Home',
       pageTitle: 'Personalizacao da Home',
-      subtitle: 'Defina tema, fontes, cores, favicon e controles do player da tela inicial.',
+      subtitle: 'Defina tema, fontes, cores e controles do player da tela inicial.',
       themeLabel: 'Tema pre-definido',
       themeHelp: 'Escolha um tema base e ajuste as cores manualmente se desejar.',
       fontLabel: 'Fonte principal',
-      faviconLabel: 'URL do favicon e icone do canal',
-      faviconHelp: 'Este mesmo icone aparece no favicon e ao lado do nome do canal.',
       backgroundImageLabel: 'URL da imagem de pano de fundo',
       backgroundImageHelp: 'Se em branco, a cor de fundo selecionada sera utilizada.',
       colorSection: 'Cores da pagina inicial',
@@ -38,12 +36,10 @@
     en: {
       title: 'Home Personalization',
       pageTitle: 'Home Personalization',
-      subtitle: 'Set theme, fonts, colors, favicon and player controls for the home page.',
+      subtitle: 'Set theme, fonts, colors and player controls for the home page.',
       themeLabel: 'Preset theme',
       themeHelp: 'Pick a base theme and manually adjust colors if needed.',
       fontLabel: 'Primary font',
-      faviconLabel: 'Favicon and channel icon URL',
-      faviconHelp: 'The same icon is used for favicon and beside the channel name.',
       backgroundImageLabel: 'Background image URL',
       backgroundImageHelp: 'If empty, the selected background color will be used.',
       colorSection: 'Home page colors',
@@ -91,7 +87,6 @@
     return {
       theme: themeSelect.value,
       fontFamily: fontSelect.value,
-      faviconUrl: form.faviconUrl.value,
       backgroundImageUrl: form.backgroundImageUrl.value,
       colors: {
         bg: form.bg.value,
@@ -121,8 +116,6 @@
     setText('label-theme', t('themeLabel'));
     setText('theme-help', t('themeHelp'));
     setText('label-font-family', t('fontLabel'));
-    setText('label-favicon-url', t('faviconLabel'));
-    setText('favicon-help', t('faviconHelp'));
     setText('label-background-image-url', t('backgroundImageLabel'));
     setText('background-image-help', t('backgroundImageHelp'));
     setText('label-color-section', t('colorSection'));
@@ -184,8 +177,6 @@
     const customization = homeCustomization || {};
 
     themeSelect.value = customization.theme || 'default';
-    form.faviconUrl.value = customization.faviconUrl || '';
-
     form.backgroundImageUrl.value = customization.backgroundImageUrl || '';
 
     form.bg.value = toHexColor(customization.colors?.bg, '#0d0f14');
@@ -224,7 +215,6 @@
   });
 
   [
-    form.faviconUrl,
     form.backgroundImageUrl,
     form.bg,
     form.surface,
@@ -245,7 +235,6 @@
       homeCustomization: {
         theme: themeSelect.value,
         fontFamily: fontSelect.value,
-        faviconUrl: form.faviconUrl.value,
         backgroundImageUrl: form.backgroundImageUrl.value,
         colors: {
           bg: form.bg.value,

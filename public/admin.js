@@ -269,7 +269,10 @@
       rootStyle.removeProperty('--bg-image-url');
     }
 
-    const faviconUrl = String(homeCustomization.faviconUrl || '').trim();
+  }
+
+  function applyAdminBrandIcon(faviconUrlValue) {
+    const faviconUrl = String(faviconUrlValue || '').trim();
     if (adminBrandIcon) {
       if (faviconUrl) {
         adminBrandIcon.src = faviconUrl;
@@ -324,6 +327,7 @@
       if (publicConfig?.homeCustomization) {
         applyAdminCustomization(publicConfig.homeCustomization);
       }
+      applyAdminBrandIcon(publicConfig?.faviconUrl || '');
 
       if (!status.enabled) {
         btnLogout.style.display = 'none';

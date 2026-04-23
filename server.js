@@ -17,7 +17,7 @@ const BLOCKS_FILE = path.join(DATA_DIR, 'region-blocks.json');
 const GENERAL_SETTINGS_FILE = path.join(DATA_DIR, 'general-settings.json');
 const VIEWER_TTL_MS = 45 * 1000;
 const SESSION_PING_MS = 20 * 1000;
-const CHANNEL_NAME = process.env.CHANNEL_NAME || 'Webtv framework';
+const DEFAULT_CHANNEL_NAME = process.env.CHANNEL_NAME || 'Webtv framework';
 const ADMIN_PASSWORD = String(process.env.PASSWORD || process.env.password || '').trim();
 const ADMIN_COOKIE_NAME = 'tvs_admin_auth';
 const ADMIN_COOKIE_TTL_MS = 12 * 60 * 60 * 1000;
@@ -139,6 +139,10 @@ function sanitizeOptionalUrl(value) {
   }
 }
 
+function sanitizeChannelName(value) {
+  return String(value || '').trim();
+}
+
 function sanitizeHexColor(value, fallback) {
   const str = String(value || '').trim();
   if (/^#[0-9a-fA-F]{6}$/.test(str)) {
@@ -192,20 +196,25 @@ function readGeneralSettings() {
   ensureDataStore();
   try {
     const raw = JSON.parse(fs.readFileSync(GENERAL_SETTINGS_FILE, 'utf8'));
+    const savedFavicon = sanitizeOptionalUrl(raw?.faviconUrl || raw?.homeCustomization?.faviconUrl || '');
     const fallbackHome = {
       ...DEFAULT_HOME_CUSTOMIZATION,
-      faviconUrl: sanitizeOptionalUrl(raw?.faviconUrl || DEFAULT_HOME_CUSTOMIZATION.faviconUrl),
+      faviconUrl: savedFavicon,
     };
 
     return {
+      channelName: sanitizeChannelName(raw?.channelName),
       streamUrl: sanitizeOptionalUrl(raw?.streamUrl),
       epgUrl: sanitizeOptionalUrl(raw?.epgUrl),
+      faviconUrl: savedFavicon,
       homeCustomization: sanitizeHomeCustomization(raw?.homeCustomization, fallbackHome),
     };
   } catch {
     return {
+      channelName: '',
       streamUrl: '',
       epgUrl: '',
+      faviconUrl: '',
       homeCustomization: { ...DEFAULT_HOME_CUSTOMIZATION },
     };
   }
@@ -214,15 +223,24 @@ function readGeneralSettings() {
 async function writeGeneralSettings(settings) {
   ensureDataStore();
   const existing = readGeneralSettings();
+  const nextFaviconUrl = sanitizeOptionalUrl(settings?.faviconUrl);
   const nextHomeCustomization = sanitizeHomeCustomization(
     settings?.homeCustomization,
-    existing.homeCustomization
+    {
+      ...existing.homeCustomization,
+      faviconUrl: nextFaviconUrl || existing.faviconUrl || existing.homeCustomization?.faviconUrl,
+    }
   );
 
   const payload = {
+    channelName: sanitizeChannelName(settings?.channelName),
     streamUrl: sanitizeOptionalUrl(settings?.streamUrl),
     epgUrl: sanitizeOptionalUrl(settings?.epgUrl),
-    homeCustomization: nextHomeCustomization,
+    faviconUrl: nextFaviconUrl,
+    homeCustomization: {
+      ...nextHomeCustomization,
+      faviconUrl: nextFaviconUrl,
+    },
   };
 
   await fs.promises.writeFile(GENERAL_SETTINGS_FILE, JSON.stringify(payload, null, 2), 'utf8');
@@ -231,14 +249,17 @@ async function writeGeneralSettings(settings) {
 
 function getGeneralRuntimeConfig() {
   const settings = readGeneralSettings();
+  const effectiveFaviconUrl = settings.faviconUrl || settings.homeCustomization?.faviconUrl || sanitizeOptionalUrl(DEFAULT_FAVICON_URL);
   const fallbackHome = {
     ...settings.homeCustomization,
-    faviconUrl: settings.homeCustomization?.faviconUrl || sanitizeOptionalUrl(DEFAULT_FAVICON_URL),
+    faviconUrl: effectiveFaviconUrl,
   };
 
   return {
+    channelName: settings.channelName || DEFAULT_CHANNEL_NAME,
     streamUrl: settings.streamUrl || DEFAULT_M3U8_URL,
     epgUrl: settings.epgUrl || DEFAULT_EPG_URL,
+    faviconUrl: effectiveFaviconUrl,
     homeCustomization: sanitizeHomeCustomization(fallbackHome, settings.homeCustomization),
   };
 }
@@ -472,7 +493,7 @@ function getPreferredChannelId(channels, programmes) {
     return STREAM_CHANNEL_ID;
   }
 
-  const normalizedChannelName = normalizeText(CHANNEL_NAME);
+  const normalizedChannelName = normalizeText(getGeneralRuntimeConfig().channelName || DEFAULT_CHANNEL_NAME);
   const matchingChannel = (channels || []).find((channel) => {
     const channelName = normalizeText(channel?.name);
     return channelName && normalizedChannelName && (
@@ -983,9 +1004,9 @@ app.get('/api/public-config', (req, res) => {
   const runtimeConfig = getGeneralRuntimeConfig();
   res.setHeader('Cache-Control', 'no-store');
   res.json({
-    channelName: CHANNEL_NAME,
+    channelName: runtimeConfig.channelName,
     version: getLocalAppVersion(),
-    faviconUrl: runtimeConfig.homeCustomization.faviconUrl,
+    faviconUrl: runtimeConfig.faviconUrl,
     epgEnabled: Boolean(runtimeConfig.epgUrl),
     homeCustomization: runtimeConfig.homeCustomization,
     streamStateVersion,
@@ -993,10 +1014,11 @@ app.get('/api/public-config', (req, res) => {
 });
 
 app.get('/api/admin/auth/status', (req, res) => {
+  const runtimeConfig = getGeneralRuntimeConfig();
   res.json({
     enabled: Boolean(ADMIN_PASSWORD),
     authenticated: isAdminAuthenticated(req),
-    channelName: CHANNEL_NAME,
+    channelName: runtimeConfig.channelName,
     version: getLocalAppVersion(),
   });
 });
@@ -1061,10 +1083,14 @@ app.get('/api/admin/general-settings', requireAdminAuth, (req, res) => {
   const runtime = getGeneralRuntimeConfig();
 
   res.json({
+    channelName: saved.channelName,
     streamUrl: saved.streamUrl,
     epgUrl: saved.epgUrl,
+    faviconUrl: saved.faviconUrl,
+    effectiveChannelName: runtime.channelName,
     effectiveStreamUrl: runtime.streamUrl,
     effectiveEpgUrl: runtime.epgUrl,
+    effectiveFaviconUrl: runtime.faviconUrl,
   });
 });
 
@@ -1087,12 +1113,14 @@ app.get('/api/admin/home-customization', requireAdminAuth, (req, res) => {
 
 app.post('/api/admin/general-settings', requireAdminAuth, async (req, res) => {
   const payload = {
+    channelName: req.body?.channelName,
     streamUrl: req.body?.streamUrl,
     epgUrl: req.body?.epgUrl,
+    faviconUrl: req.body?.faviconUrl,
     homeCustomization: readGeneralSettings().homeCustomization,
   };
 
-  const invalidField = ['streamUrl', 'epgUrl'].find((field) => {
+  const invalidField = ['streamUrl', 'epgUrl', 'faviconUrl'].find((field) => {
     const value = String(payload[field] || '').trim();
     return value && !sanitizeOptionalUrl(value);
   });
@@ -1132,15 +1160,12 @@ app.post('/api/admin/home-customization', requireAdminAuth, async (req, res) => 
   const currentSettings = readGeneralSettings();
   const nextHomeCustomization = sanitizeHomeCustomization(rawHomeCustomization, currentSettings.homeCustomization);
 
-  const hasInvalidFavicon = String(rawHomeCustomization?.faviconUrl || '').trim() && !sanitizeOptionalUrl(rawHomeCustomization?.faviconUrl);
-  if (hasInvalidFavicon) {
-    return res.status(400).json({ error: 'Campo faviconUrl invalido. Use URL http(s) valida.' });
-  }
-
   try {
     const saved = await writeGeneralSettings({
+      channelName: currentSettings.channelName,
       streamUrl: currentSettings.streamUrl,
       epgUrl: currentSettings.epgUrl,
+      faviconUrl: currentSettings.faviconUrl,
       homeCustomization: nextHomeCustomization,
     });
 
@@ -1436,7 +1461,7 @@ app.get('*', (req, res) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`\n🟢  ${CHANNEL_NAME} rodando em http://localhost:${PORT}\n`);
+  console.log(`\n🟢  ${getGeneralRuntimeConfig().channelName} rodando em http://localhost:${PORT}\n`);
   console.log(`   Stream proxy : http://localhost:${PORT}/stream/playlist.m3u8`);
   console.log(`   XMLTV proxy  : http://localhost:${PORT}/epg/xmltv.xml`);
   console.log(`   Admin        : http://localhost:${PORT}/admin`);
