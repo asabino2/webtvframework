@@ -2,7 +2,7 @@
 
 Interface web para exibição do canal ao vivo com grade EPG.
 
-Versão atual: **1.0.3**
+Versão atual: **1.1.0**
 
 ## Estrutura
 
@@ -70,7 +70,7 @@ PORT=3000
 ```
 
 - `CHANNEL_NAME`: nome público do canal exibido nas páginas.
-- `FAVICON_URL`: favicon padrão do site principal (usado quando não houver valor salvo nas configurações gerais).
+- `FAVICON_URL`: favicon padrão do site principal (usado quando não houver valor salvo na personalização da home).
 - `PASSWORD`: senha da área administrativa em `/admin`.
     - Se estiver vazia, a administração abre sem login.
     - Se estiver preenchida, o login passa a ser obrigatório.
@@ -81,7 +81,19 @@ No painel administrativo existe a seção **Configurações Gerais** (rota `/con
 
 - URL do stream original (equivalente a `M3U8_URL`)
 - URL do EPG original (equivalente a `EPG_URL`)
-- URL do favicon do site principal
+
+Se a URL do EPG ficar vazia, a tela inicial oculta automaticamente:
+
+- Botão de grade de programação
+- Cartões de atração atual e próxima
+
+No painel administrativo também existe a seção **Personalização da Home** (rota `/personalizacao`) para configurar:
+
+- Tema pré-definido (incluindo tema padrão atual)
+- Cores da home (fundo, superfície, borda, destaque e texto)
+- Fonte principal
+- Controles do player (Google Cast, tela cheia, volume e mudo)
+- URL do favicon (também usada como ícone ao lado do nome do canal)
 
 Ao salvar, os dados são gravados em:
 
@@ -100,7 +112,24 @@ Exemplo de `general-settings.json`:
 {
     "streamUrl": "https://origem.exemplo/live/playlist.m3u8",
     "epgUrl": "https://origem.exemplo/epg/xmltv.xml",
-    "faviconUrl": "https://origem.exemplo/favicon.ico"
+    "homeCustomization": {
+        "theme": "default",
+        "faviconUrl": "https://origem.exemplo/favicon.ico",
+        "fontFamily": "Segoe UI, system-ui, -apple-system, sans-serif",
+        "colors": {
+            "bg": "#0d0f14",
+            "surface": "#161b24",
+            "border": "#2a3347",
+            "accent": "#e8a020",
+            "text": "#e8ecf0"
+        },
+        "playerControls": {
+            "googleCast": true,
+            "fullscreen": true,
+            "volume": true,
+            "mute": true
+        }
+    }
 }
 ```
 
@@ -108,6 +137,8 @@ Exemplo de `general-settings.json`:
 
 - `GET /api/admin/general-settings`: retorna valores salvos e valores efetivos (com fallback para env)
 - `POST /api/admin/general-settings`: salva configurações e agenda restart da aplicação
+- `GET /api/admin/home-customization`: retorna personalização da home, temas e fontes permitidas
+- `POST /api/admin/home-customization`: salva personalização da home e agenda restart da aplicação
 
 ### Embed do player
 
@@ -156,7 +187,8 @@ PORT=8080 npm start
 - **EPG em tempo real**: programa atual + próximo na sidebar, com barra de progresso
 - **Endpoint XMLTV**: proxy do XML bruto em `/epg/xmltv.xml`, no mesmo padrão do stream
 - **Administração**: painel em `/admin` com menu lateral para Bloqueio de Região e Estatísticas
-- **Configurações Gerais**: painel admin com stream URL, EPG URL e favicon URL persistidos em `/app/data/general-settings.json`
+- **Configurações Gerais**: painel admin com stream URL e EPG URL persistidos em `/app/data/general-settings.json`
+- **Personalização da Home**: painel admin com tema, cores, fonte, controles de player e favicon/ícone do canal
 - **Embed**: player incorporável em `/embed` com opção de cópia no admin em `/embed-opcao`
 - **Atualização no painel**: botão **Atualizar** aparece somente quando existir nova versão, com aviso de versão disponível
 - **Analytics por origem**: estatísticas exibem `referrer` (quando aplicável), incluindo acessos via embed

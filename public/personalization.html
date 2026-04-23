@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personalizacao da Home - Webtv framework</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .settings-page {
+      max-width: 980px;
+      margin: 40px auto;
+      padding: 0 20px 40px;
+    }
+
+    .settings-header {
+      margin-bottom: 20px;
+    }
+
+    .settings-header h1 {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+    }
+
+    .settings-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .settings-form {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.9rem;
+      color: #d9dde4;
+    }
+
+    .field input,
+    .field select {
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      color: #fff;
+      padding: 10px 12px;
+      font: inherit;
+      width: 100%;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .switch-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .switch-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .switch-item label {
+      font-size: 0.92rem;
+      color: #d9dde4;
+    }
+
+    .switch-item input[type="checkbox"] {
+      width: auto;
+      transform: scale(1.1);
+    }
+
+    .btn-primary {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #ffca28;
+      color: #1a1a1a;
+      width: fit-content;
+    }
+
+    .muted {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    .status-message {
+      margin: 8px 0 0;
+      font-size: 0.92rem;
+    }
+
+    .status-message.error {
+      color: #ffadad;
+    }
+
+    .status-message.success {
+      color: #b9fbc0;
+    }
+
+    @media (max-width: 700px) {
+      .color-grid,
+      .switch-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="settings-page">
+    <header class="settings-header">
+      <h1 id="personalization-title">Personalizacao da Home</h1>
+      <p class="muted" id="personalization-subtitle">Defina tema, fontes, cores, favicon e controles do player da tela inicial.</p>
+    </header>
+
+    <section class="settings-card">
+      <form id="personalization-form" class="settings-form">
+        <div class="field">
+          <label for="theme" id="label-theme">Tema pre-definido</label>
+          <select id="theme" name="theme"></select>
+          <p class="muted" id="theme-help">Escolha um tema base e ajuste as cores manualmente se desejar.</p>
+        </div>
+
+        <div class="field">
+          <label for="font-family" id="label-font-family">Fonte principal</label>
+          <select id="font-family" name="fontFamily"></select>
+        </div>
+
+        <div class="field">
+          <label for="favicon-url" id="label-favicon-url">URL do favicon e icone do canal</label>
+          <input id="favicon-url" name="faviconUrl" type="url" placeholder="https://exemplo.com/favicon.ico" />
+          <p class="muted" id="favicon-help">Este mesmo icone aparece no favicon e ao lado do nome do canal.</p>
+        </div>
+
+        <div class="field">
+          <label for="background-image-url" id="label-background-image-url">URL da imagem de pano de fundo</label>
+          <input id="background-image-url" name="backgroundImageUrl" type="url" placeholder="https://exemplo.com/background.jpg" />
+          <p class="muted" id="background-image-help">Se em branco, a cor de fundo selecionada sera utilizada.</p>
+        </div>
+
+        <div class="field">
+          <label id="label-color-section">Cores da pagina inicial</label>
+          <div class="color-grid">
+            <div class="field">
+              <label for="color-bg" id="label-color-bg">Cor de fundo</label>
+              <input id="color-bg" name="bg" type="color" />
+            </div>
+            <div class="field">
+              <label for="color-surface" id="label-color-surface">Cor de cartoes/superficie</label>
+              <input id="color-surface" name="surface" type="color" />
+            </div>
+            <div class="field">
+              <label for="color-border" id="label-color-border">Cor de borda</label>
+              <input id="color-border" name="border" type="color" />
+            </div>
+            <div class="field">
+              <label for="color-accent" id="label-color-accent">Cor de destaque</label>
+              <input id="color-accent" name="accent" type="color" />
+            </div>
+            <div class="field">
+              <label for="color-text" id="label-color-text">Cor de texto principal</label>
+              <input id="color-text" name="text" type="color" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label id="label-player-controls">Controles do player na home</label>
+          <div class="switch-grid">
+            <div class="switch-item">
+              <label for="control-google-cast" id="label-control-google-cast">Google Cast</label>
+              <input id="control-google-cast" name="googleCast" type="checkbox" />
+            </div>
+            <div class="switch-item">
+              <label for="control-fullscreen" id="label-control-fullscreen">Tela cheia</label>
+              <input id="control-fullscreen" name="fullscreen" type="checkbox" />
+            </div>
+            <div class="switch-item">
+              <label for="control-volume" id="label-control-volume">Barra de volume</label>
+              <input id="control-volume" name="volume" type="checkbox" />
+            </div>
+            <div class="switch-item">
+              <label for="control-mute" id="label-control-mute">Botao mudo</label>
+              <input id="control-mute" name="mute" type="checkbox" />
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-primary" type="submit" id="btn-save-personalization">Salvar personalizacao</button>
+        <p id="personalization-status" class="status-message" style="display:none"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="/personalization.js"></script>
+</body>
+</html>

@@ -9,13 +9,11 @@
     pt: {
       title: 'Configuracoes Gerais',
       pageTitle: 'Configuracoes Gerais',
-      subtitle: 'Defina as URLs base do stream/EPG e o favicon do site principal.',
+      subtitle: 'Defina as URLs base do stream e do EPG (XMLTV).',
       streamLabel: 'URL do stream original (M3U8)',
       epgLabel: 'URL do EPG original (XMLTV)',
-      faviconLabel: 'URL do favicon do site principal',
       streamHelp: 'Se vazio, usa a variavel de ambiente M3U8_URL.',
-      epgHelp: 'Se vazio, usa a variavel de ambiente EPG_URL.',
-      faviconHelp: 'Se vazio, usa a variavel de ambiente FAVICON_URL.',
+      epgHelp: 'Se vazio, o EPG fica desativado na tela inicial.',
       save: 'Salvar configuracoes',
       saveSuccess: 'Configuracoes salvas. Reiniciando a aplicacao...',
       saveError: 'Nao foi possivel salvar as configuracoes.',
@@ -24,13 +22,11 @@
     en: {
       title: 'General Settings',
       pageTitle: 'General Settings',
-      subtitle: 'Set source stream/EPG URLs and the main site favicon URL.',
+      subtitle: 'Set source stream and EPG (XMLTV) URLs.',
       streamLabel: 'Original stream URL (M3U8)',
       epgLabel: 'Original EPG URL (XMLTV)',
-      faviconLabel: 'Main site favicon URL',
       streamHelp: 'If empty, uses environment variable M3U8_URL.',
-      epgHelp: 'If empty, uses environment variable EPG_URL.',
-      faviconHelp: 'If empty, uses environment variable FAVICON_URL.',
+      epgHelp: 'If empty, EPG is disabled on the home page.',
       save: 'Save settings',
       saveSuccess: 'Settings saved. Restarting application...',
       saveError: 'Could not save settings.',
@@ -61,10 +57,8 @@
     setText('settings-subtitle', t('subtitle'));
     setText('label-stream-url', t('streamLabel'));
     setText('label-epg-url', t('epgLabel'));
-    setText('label-favicon-url', t('faviconLabel'));
     setText('stream-help', t('streamHelp'));
     setText('epg-help', t('epgHelp'));
-    setText('favicon-help', t('faviconHelp'));
     setText('btn-save-settings', t('save'));
   }
 
@@ -84,7 +78,6 @@
 
     form.streamUrl.value = payload.streamUrl || '';
     form.epgUrl.value = payload.epgUrl || '';
-    form.faviconUrl.value = payload.faviconUrl || '';
   }
 
   form.addEventListener('submit', async (event) => {
@@ -94,7 +87,6 @@
     const payload = {
       streamUrl: form.streamUrl.value,
       epgUrl: form.epgUrl.value,
-      faviconUrl: form.faviconUrl.value,
     };
 
     const response = await fetch('/api/admin/general-settings', {

@@ -14,6 +14,9 @@
   const updateSection = document.getElementById('update-section');
   const updateAvailableLabel = document.getElementById('update-available-label');
   const languageSelect = document.getElementById('admin-language-select');
+  const adminBrandIcon = document.getElementById('admin-brand-icon');
+
+  let currentHomeCustomization = null;
 
   const LANG_KEY = 'webtv_lang';
   const i18n = {
@@ -24,6 +27,7 @@
       menuBlocks: 'Bloqueio de Regiao',
       menuStats: 'Estatisticas',
       menuSettings: 'Configuracoes Gerais',
+      menuPersonalization: 'Personalizacao da Home',
       menuEmbed: 'Embed',
       logout: 'Sair',
       update: 'Atualizar',
@@ -36,6 +40,7 @@
       viewBlocks: 'Bloqueio de Regiao',
       viewStats: 'Estatisticas',
       viewSettings: 'Configuracoes Gerais',
+      viewPersonalization: 'Personalizacao da Home',
       viewEmbed: 'Embed',
       authStatusError: 'Falha ao consultar status da autenticacao',
       invalidPassword: 'Senha invalida',
@@ -56,6 +61,7 @@
       menuBlocks: 'Region Blocking',
       menuStats: 'Statistics',
       menuSettings: 'General Settings',
+      menuPersonalization: 'Home Personalization',
       menuEmbed: 'Embed',
       logout: 'Sign out',
       update: 'Update',
@@ -68,6 +74,7 @@
       viewBlocks: 'Region Blocking',
       viewStats: 'Statistics',
       viewSettings: 'General Settings',
+      viewPersonalization: 'Home Personalization',
       viewEmbed: 'Embed',
       authStatusError: 'Failed to load authentication status',
       invalidPassword: 'Invalid password',
@@ -97,12 +104,14 @@
     blocks: '/bloqueios',
     stats: '/estatisticas',
     settings: '/configuracoes-gerais',
+    personalization: '/personalizacao',
     embed: '/embed-opcao',
   };
 
   function titleByView(view) {
     if (view === 'stats') return t('viewStats');
     if (view === 'settings') return t('viewSettings');
+    if (view === 'personalization') return t('viewPersonalization');
     if (view === 'embed') return t('viewEmbed');
     return t('viewBlocks');
   }
@@ -120,6 +129,7 @@
     setText('menu-blocks', t('menuBlocks'));
     setText('menu-stats', t('menuStats'));
     setText('menu-settings', t('menuSettings'));
+    setText('menu-personalization', t('menuPersonalization'));
     setText('menu-embed', t('menuEmbed'));
     setText('btn-logout', t('logout'));
     setText('btn-update', t('update'));
@@ -232,6 +242,57 @@
     return payload;
   }
 
+  function applyAdminCustomization(homeCustomization) {
+    if (!homeCustomization || typeof homeCustomization !== 'object') return;
+    currentHomeCustomization = homeCustomization;
+
+    const colors = homeCustomization.colors || {};
+    const rootStyle = document.documentElement.style;
+
+    if (colors.bg) rootStyle.setProperty('--bg', colors.bg);
+    if (colors.surface) rootStyle.setProperty('--surface', colors.surface);
+    if (colors.surface) rootStyle.setProperty('--surface-2', colors.surface);
+    if (colors.border) rootStyle.setProperty('--border', colors.border);
+    if (colors.accent) rootStyle.setProperty('--accent', colors.accent);
+    if (colors.text) {
+      rootStyle.setProperty('--text', colors.text);
+      rootStyle.setProperty('--muted', colors.text);
+    }
+    if (homeCustomization.fontFamily) {
+      rootStyle.setProperty('--font-family-base', homeCustomization.fontFamily);
+    }
+
+    const bgImageUrl = String(homeCustomization.backgroundImageUrl || '').trim();
+    if (bgImageUrl) {
+      rootStyle.setProperty('--bg-image-url', `url('${bgImageUrl}')`);
+    } else {
+      rootStyle.removeProperty('--bg-image-url');
+    }
+
+    const faviconUrl = String(homeCustomization.faviconUrl || '').trim();
+    if (adminBrandIcon) {
+      if (faviconUrl) {
+        adminBrandIcon.src = faviconUrl;
+        adminBrandIcon.style.display = 'block';
+        adminBrandIcon.onerror = () => {
+          adminBrandIcon.style.display = 'none';
+          adminBrandIcon.removeAttribute('src');
+        };
+      } else {
+        adminBrandIcon.style.display = 'none';
+        adminBrandIcon.removeAttribute('src');
+      }
+    }
+  }
+
+  async function loadPublicConfig() {
+    const response = await fetch('/api/public-config', { cache: 'no-store' });
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
+  }
+
   function showUpdateSection(version) {
     updateAvailableLabel.textContent = `${t('newVersionAvailable')} ${version}`;
     updateSection.style.display = 'flex';
@@ -259,6 +320,10 @@
     try {
       const status = await loadStatus();
       setChannelName(status.channelName);
+      const publicConfig = await loadPublicConfig().catch(() => null);
+      if (publicConfig?.homeCustomization) {
+        applyAdminCustomization(publicConfig.homeCustomization);
+      }
 
       if (!status.enabled) {
         btnLogout.style.display = 'none';
@@ -331,6 +396,19 @@
     } catch (error) {
       console.error('[ADMIN] Erro ao sair:', error);
     }
+  });
+
+  window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) {
+      return;
+    }
+
+    const data = event.data;
+    if (!data || data.type !== 'webtv-home-customization-preview') {
+      return;
+    }
+
+    applyAdminCustomization(data.homeCustomization);
   });
 
   applyStaticTranslations();

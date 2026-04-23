@@ -16,7 +16,8 @@
   <header class="site-header">
     <div class="header-inner">
       <div class="logo">
-        <span class="logo-icon">📺</span>
+        <img class="logo-icon-img" id="logo-icon-img" alt="Icone do canal" style="display:none" />
+        <span class="logo-icon" id="logo-icon-fallback">📺</span>
         <span class="logo-text"><span id="logo-channel-name">Webtv framework</span></span>
       </div>
       <div class="live-badge">
@@ -115,9 +116,9 @@
     </section>
 
     <!-- Sidebar EPG atual -->
-    <aside class="epg-sidebar">
+    <aside class="epg-sidebar" id="epg-sidebar">
       <!-- Programa atual -->
-      <div class="program-card current-program">
+      <div class="program-card current-program" id="program-now-card">
         <div class="program-card-label">
           <span class="live-dot small"></span> <span id="label-now">Agora</span>
         </div>
@@ -131,7 +132,7 @@
       </div>
 
       <!-- Próximo programa -->
-      <div class="program-card next-program">
+      <div class="program-card next-program" id="program-next-card">
         <div class="program-card-label next-label" id="label-next">A seguir</div>
         <div class="program-card-title" id="next-title">—</div>
         <div class="program-card-time" id="next-time"></div>

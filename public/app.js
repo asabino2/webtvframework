@@ -22,6 +22,8 @@
   const btnRetry      = document.getElementById('btn-retry');
   const btnCast       = document.getElementById('btn-cast');
   const logoChannelName = document.getElementById('logo-channel-name');
+  const logoIconImg = document.getElementById('logo-icon-img');
+  const logoIconFallback = document.getElementById('logo-icon-fallback');
   const appVersionLine = document.getElementById('app-version-line');
   const appAuthorLine = document.getElementById('app-author-line');
 
@@ -51,6 +53,9 @@
   const nextCat       = document.getElementById('next-cat');
   const viewerCount   = document.getElementById('viewer-count');
   const viewerUpdated = document.getElementById('viewer-updated-at');
+  const epgSidebar = document.getElementById('epg-sidebar');
+  const programNowCard = document.getElementById('program-now-card');
+  const programNextCard = document.getElementById('program-next-card');
 
   const LANG_KEY = 'webtv_lang';
   const i18n = {
@@ -185,11 +190,112 @@
   let heartbeatTimer = null;
   let liveTimer = null;
   let streamStatePollTimer = null;
+  let epgSidebarTimer = null;
   let streamStateChannel = null;
   let channelName = 'Webtv framework';
   let appVersion = '0.0.2';
   let faviconUrl = '';
   let streamStateVersion = 0;
+  let epgEnabled = true;
+  let homeCustomization = null;
+  let castApiAvailable = false;
+
+  function setDisplay(element, value) {
+    if (!element) return;
+    element.style.display = value;
+  }
+
+  function isFullscreenEnabled() {
+    return homeCustomization?.playerControls?.fullscreen !== false;
+  }
+
+  function isMuteEnabled() {
+    return homeCustomization?.playerControls?.mute !== false;
+  }
+
+  function isVolumeEnabled() {
+    return homeCustomization?.playerControls?.volume !== false;
+  }
+
+  function isCastEnabled() {
+    return homeCustomization?.playerControls?.googleCast !== false;
+  }
+
+  function updateCastButtonVisibility() {
+    if (!btnCast) return;
+    setDisplay(btnCast, (isCastEnabled() && castApiAvailable) ? 'flex' : 'none');
+  }
+
+  function updatePlayerControlsVisibility() {
+    setDisplay(btnMute, isMuteEnabled() ? 'flex' : 'none');
+    setDisplay(volRange, isVolumeEnabled() ? 'block' : 'none');
+    setDisplay(btnFS, isFullscreenEnabled() ? 'flex' : 'none');
+    updateCastButtonVisibility();
+  }
+
+  function applyHomeCustomization(config) {
+    if (!config) return;
+    homeCustomization = config;
+
+    const colors = config.colors || {};
+    const rootStyle = document.documentElement.style;
+
+    if (colors.bg) rootStyle.setProperty('--bg', colors.bg);
+    if (colors.surface) {
+      rootStyle.setProperty('--surface', colors.surface);
+      rootStyle.setProperty('--surface2', colors.surface);
+    }
+    if (colors.border) rootStyle.setProperty('--border', colors.border);
+    if (colors.accent) {
+      rootStyle.setProperty('--accent', colors.accent);
+      rootStyle.setProperty('--accent2', colors.accent);
+    }
+    if (colors.text) rootStyle.setProperty('--text', colors.text);
+    if (config.fontFamily) rootStyle.setProperty('--font-family-base', config.fontFamily);
+
+    const bgImageUrl = String(config.backgroundImageUrl || '').trim();
+    if (bgImageUrl) {
+      rootStyle.setProperty('--bg-image-url', `url('${bgImageUrl}')`);
+    } else {
+      rootStyle.removeProperty('--bg-image-url');
+    }
+
+    updatePlayerControlsVisibility();
+  }
+
+  function applyBrandIcon(url) {
+    if (!logoIconImg || !logoIconFallback) return;
+
+    if (!url) {
+      setDisplay(logoIconImg, 'none');
+      setDisplay(logoIconFallback, 'inline-flex');
+      logoIconImg.removeAttribute('src');
+      return;
+    }
+
+    logoIconImg.src = url;
+    logoIconImg.onerror = function onLogoIconError() {
+      setDisplay(logoIconImg, 'none');
+      setDisplay(logoIconFallback, 'inline-flex');
+    };
+    setDisplay(logoIconImg, 'inline-flex');
+    setDisplay(logoIconFallback, 'none');
+  }
+
+  function applyEpgVisibility() {
+    setDisplay(btnEpg, epgEnabled ? 'flex' : 'none');
+    setDisplay(programNowCard, epgEnabled ? 'block' : 'none');
+    setDisplay(programNextCard, epgEnabled ? 'block' : 'none');
+
+    if (epgSidebar) {
+      const hasAudienceCard = Boolean(viewerCount && viewerUpdated);
+      setDisplay(epgSidebar, (epgEnabled || hasAudienceCard) ? 'flex' : 'none');
+    }
+
+    if (!epgEnabled) {
+      closeEpgModal();
+    }
+  }
 
   function applyFavicon(url) {
     if (!url) return;
@@ -262,6 +368,10 @@
       if (data?.faviconUrl) {
         faviconUrl = String(data.faviconUrl);
       }
+      epgEnabled = Boolean(data?.epgEnabled);
+      if (data?.homeCustomization) {
+        applyHomeCustomization(data.homeCustomization);
+      }
 
       updateDocumentTitle();
       if (logoChannelName) {
@@ -271,6 +381,8 @@
         appVersionLine.textContent = `Webtv Framework - ${currentLang === 'en' ? 'Version' : 'Versao'} ${appVersion}`;
       }
       applyFavicon(faviconUrl);
+      applyBrandIcon(faviconUrl);
+      applyEpgVisibility();
 
       return data;
     } catch (_) {
@@ -283,9 +395,14 @@
   async function pollStreamState() {
     try {
       const previousVersion = streamStateVersion;
+      const previousEpgEnabled = epgEnabled;
       const data = await loadPublicConfig({ noCache: true });
       if (!data?.streamStateVersion) {
         return;
+      }
+
+      if (previousEpgEnabled !== epgEnabled) {
+        restartEpgPolling();
       }
 
       const nextVersion = Number(data.streamStateVersion) || 0;
@@ -422,11 +539,13 @@
   });
 
   btnMute.addEventListener('click', () => {
+    if (!isMuteEnabled()) return;
     video.muted = !video.muted;
     updateMuteIcon();
   });
 
   volRange.addEventListener('input', () => {
+    if (!isVolumeEnabled()) return;
     video.volume = parseFloat(volRange.value);
     video.muted  = video.volume === 0;
     updateMuteIcon();
@@ -446,6 +565,10 @@
   });
 
   function toggleFullscreen() {
+    if (!isFullscreenEnabled()) {
+      return;
+    }
+
     if (!document.fullscreenElement) {
       playerWrapper.requestFullscreen().catch(err => {
         console.warn('[FS]', err.message);
@@ -456,7 +579,10 @@
   }
 
   // Duplo clique para fullscreen
-  video.addEventListener('dblclick', toggleFullscreen);
+  video.addEventListener('dblclick', () => {
+    if (!isFullscreenEnabled()) return;
+    toggleFullscreen();
+  });
 
   btnRetry.addEventListener('click', initPlayer);
 
@@ -466,15 +592,21 @@
       return;
     }
 
+    castApiAvailable = true;
+
     cast.framework.CastContext.getInstance().setOptions({
       receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
       autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
     });
 
-    btnCast.style.display = 'flex';
+    updateCastButtonVisibility();
   };
 
   btnCast.addEventListener('click', async () => {
+    if (!isCastEnabled()) {
+      return;
+    }
+
     if (!window.cast?.framework || !window.chrome?.cast) {
       return;
     }
@@ -527,6 +659,10 @@
   }
 
   function updateSidebarEpg() {
+    if (!epgEnabled) {
+      return;
+    }
+
     fetch('/api/epg/now')
       .then(r => r.json())
       .then(data => {
@@ -569,9 +705,19 @@
       });
   }
 
-  // Atualiza a cada 60 segundos
-  updateSidebarEpg();
-  setInterval(updateSidebarEpg, 60_000);
+  function restartEpgPolling() {
+    if (epgSidebarTimer) {
+      clearInterval(epgSidebarTimer);
+      epgSidebarTimer = null;
+    }
+
+    if (!epgEnabled) {
+      return;
+    }
+
+    updateSidebarEpg();
+    epgSidebarTimer = setInterval(updateSidebarEpg, 60_000);
+  }
 
   // ── Analytics / audiência ───────────────────────────────────────────────
   function fmtUpdatedAt(iso) {
@@ -638,6 +784,10 @@
       clearInterval(streamStatePollTimer);
       streamStatePollTimer = null;
     }
+    if (epgSidebarTimer) {
+      clearInterval(epgSidebarTimer);
+      epgSidebarTimer = null;
+    }
     if (streamStateChannel) {
       streamStateChannel.close();
       streamStateChannel = null;
@@ -681,6 +831,7 @@
   });
 
   function openEpgModal() {
+    if (!epgEnabled) return;
     epgOverlay.classList.add('open');
     document.body.style.overflow = 'hidden';
     if (!epgLoaded) loadEpgGrid();
@@ -893,6 +1044,7 @@
   }).catch(() => {}).finally(() => {
     applyStaticTranslations();
     initPlayer();
+    restartEpgPolling();
     startAnalyticsSession();
     if ('BroadcastChannel' in window) {
       streamStateChannel = new BroadcastChannel('webtv-stream-state');

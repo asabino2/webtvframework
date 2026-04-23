@@ -2,6 +2,7 @@
   --bg: #0f141b;
   --surface: #17212d;
   --surface-2: #1f2b3b;
+  --font-family-base: "Segoe UI", system-ui, sans-serif;
   --border: #32475f;
   --text: #ecf1f7;
   --muted: #9eb1c6;
@@ -17,8 +18,12 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  background: radial-gradient(circle at 0 0, #1f2b3b 0, #0f141b 45%);
+  font-family: var(--font-family-base);
+  background-color: var(--bg);
+  background-image: var(--bg-image-url, radial-gradient(circle at 0 0, var(--surface-2) 0, var(--bg) 45%));
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: var(--text);
 }
 
@@ -50,6 +55,15 @@ body {
   margin: 0;
   font-size: 26px;
   line-height: 1.1;
+}
+
+.admin-brand-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  margin-bottom: 10px;
 }
 
 .admin-menu {

@@ -13,13 +13,18 @@
   --live:        #2ecc71;
   --radius:      12px;
   --shadow:      0 4px 24px rgba(0,0,0,.55);
+  --font-family-base: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 html, body {
   height: 100%;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: var(--bg-image-url, none);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: var(--text);
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-family-base);
   font-size: 15px;
   overflow-x: hidden;
 }
@@ -52,6 +57,13 @@ html, body {
   letter-spacing: .5px;
 }
 .logo-icon { font-size: 24px; }
+.logo-icon-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
 .logo-text strong { color: var(--accent); }
 
 .live-badge {

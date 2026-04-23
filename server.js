@@ -39,9 +39,61 @@ let updatePromise = null;
 // ── Configurações da fonte local ────────────────────────────────────────────
 const UPSTREAM_BASE = process.env.UPSTREAM_BASE || 'http://192.168.1.186:8409';
 const DEFAULT_M3U8_URL = process.env.M3U8_URL || `${UPSTREAM_BASE}/iptv/channel/2.m3u8?mode=segmenter`;
-const DEFAULT_EPG_URL = process.env.EPG_URL || `${UPSTREAM_BASE}/iptv/xmltv.xml`;
+const DEFAULT_EPG_URL = process.env.EPG_URL || '';
 const DEFAULT_FAVICON_URL = process.env.FAVICON_URL || '/favicon-default.svg';
 const STREAM_CHANNEL_ID = process.env.STREAM_CHANNEL_ID || null;
+const HOME_THEME_PRESETS = {
+  default: {
+    colors: {
+      bg: '#0d0f14',
+      surface: '#161b24',
+      border: '#2a3347',
+      accent: '#e8a020',
+      text: '#e8ecf0',
+    },
+    fontFamily: 'Segoe UI, system-ui, -apple-system, sans-serif',
+  },
+  sunset: {
+    colors: {
+      bg: '#1f1020',
+      surface: '#2d1a2e',
+      border: '#5c344f',
+      accent: '#ff9f1c',
+      text: '#f8edf4',
+    },
+    fontFamily: 'Trebuchet MS, Verdana, sans-serif',
+  },
+  ocean: {
+    colors: {
+      bg: '#081b2a',
+      surface: '#0f2a40',
+      border: '#28506b',
+      accent: '#40c4ff',
+      text: '#e7f6ff',
+    },
+    fontFamily: 'Tahoma, Segoe UI, sans-serif',
+  },
+};
+const HOME_ALLOWED_FONTS = [
+  'Segoe UI, system-ui, -apple-system, sans-serif',
+  'Trebuchet MS, Verdana, sans-serif',
+  'Tahoma, Segoe UI, sans-serif',
+  'Georgia, Times New Roman, serif',
+  'Courier New, monospace',
+];
+const DEFAULT_HOME_CUSTOMIZATION = {
+  theme: 'default',
+  colors: { ...HOME_THEME_PRESETS.default.colors },
+  fontFamily: HOME_THEME_PRESETS.default.fontFamily,
+  playerControls: {
+    googleCast: true,
+    fullscreen: true,
+    volume: true,
+    mute: true,
+  },
+  faviconUrl: '',
+  backgroundImageUrl: '',
+};
 
 // Cache do EPG para evitar requisições repetidas
 let epgXmlCache = null;
@@ -87,30 +139,90 @@ function sanitizeOptionalUrl(value) {
   }
 }
 
+function sanitizeHexColor(value, fallback) {
+  const str = String(value || '').trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(str)) {
+    return str.toLowerCase();
+  }
+  return fallback;
+}
+
+function sanitizeTheme(theme) {
+  const str = String(theme || '').trim().toLowerCase();
+  return HOME_THEME_PRESETS[str] ? str : 'default';
+}
+
+function sanitizeFontFamily(fontFamily, fallback) {
+  const str = String(fontFamily || '').trim();
+  return HOME_ALLOWED_FONTS.includes(str) ? str : fallback;
+}
+
+function sanitizeHomeCustomization(value, fallback = DEFAULT_HOME_CUSTOMIZATION) {
+  const source = value && typeof value === 'object' ? value : {};
+  const theme = sanitizeTheme(source.theme || fallback.theme);
+  const preset = HOME_THEME_PRESETS[theme] || HOME_THEME_PRESETS.default;
+  const baseColors = {
+    ...preset.colors,
+    ...(fallback.colors || {}),
+  };
+  const colorsSource = source.colors && typeof source.colors === 'object' ? source.colors : {};
+
+  return {
+    theme,
+    colors: {
+      bg: sanitizeHexColor(colorsSource.bg, baseColors.bg),
+      surface: sanitizeHexColor(colorsSource.surface, baseColors.surface),
+      border: sanitizeHexColor(colorsSource.border, baseColors.border),
+      accent: sanitizeHexColor(colorsSource.accent, baseColors.accent),
+      text: sanitizeHexColor(colorsSource.text, baseColors.text),
+    },
+    fontFamily: sanitizeFontFamily(source.fontFamily, fallback.fontFamily || preset.fontFamily),
+    playerControls: {
+      googleCast: source.playerControls?.googleCast !== false,
+      fullscreen: source.playerControls?.fullscreen !== false,
+      volume: source.playerControls?.volume !== false,
+      mute: source.playerControls?.mute !== false,
+    },
+    faviconUrl: sanitizeOptionalUrl(source.faviconUrl),
+    backgroundImageUrl: sanitizeOptionalUrl(source.backgroundImageUrl),
+  };
+}
+
 function readGeneralSettings() {
   ensureDataStore();
   try {
     const raw = JSON.parse(fs.readFileSync(GENERAL_SETTINGS_FILE, 'utf8'));
+    const fallbackHome = {
+      ...DEFAULT_HOME_CUSTOMIZATION,
+      faviconUrl: sanitizeOptionalUrl(raw?.faviconUrl || DEFAULT_HOME_CUSTOMIZATION.faviconUrl),
+    };
+
     return {
       streamUrl: sanitizeOptionalUrl(raw?.streamUrl),
       epgUrl: sanitizeOptionalUrl(raw?.epgUrl),
-      faviconUrl: sanitizeOptionalUrl(raw?.faviconUrl),
+      homeCustomization: sanitizeHomeCustomization(raw?.homeCustomization, fallbackHome),
     };
   } catch {
     return {
       streamUrl: '',
       epgUrl: '',
-      faviconUrl: '',
+      homeCustomization: { ...DEFAULT_HOME_CUSTOMIZATION },
     };
   }
 }
 
 async function writeGeneralSettings(settings) {
   ensureDataStore();
+  const existing = readGeneralSettings();
+  const nextHomeCustomization = sanitizeHomeCustomization(
+    settings?.homeCustomization,
+    existing.homeCustomization
+  );
+
   const payload = {
     streamUrl: sanitizeOptionalUrl(settings?.streamUrl),
     epgUrl: sanitizeOptionalUrl(settings?.epgUrl),
-    faviconUrl: sanitizeOptionalUrl(settings?.faviconUrl),
+    homeCustomization: nextHomeCustomization,
   };
 
   await fs.promises.writeFile(GENERAL_SETTINGS_FILE, JSON.stringify(payload, null, 2), 'utf8');
@@ -119,10 +231,15 @@ async function writeGeneralSettings(settings) {
 
 function getGeneralRuntimeConfig() {
   const settings = readGeneralSettings();
+  const fallbackHome = {
+    ...settings.homeCustomization,
+    faviconUrl: settings.homeCustomization?.faviconUrl || sanitizeOptionalUrl(DEFAULT_FAVICON_URL),
+  };
+
   return {
     streamUrl: settings.streamUrl || DEFAULT_M3U8_URL,
     epgUrl: settings.epgUrl || DEFAULT_EPG_URL,
-    faviconUrl: settings.faviconUrl || DEFAULT_FAVICON_URL,
+    homeCustomization: sanitizeHomeCustomization(fallbackHome, settings.homeCustomization),
   };
 }
 
@@ -423,7 +540,17 @@ function isProgrammeBlocked(programme, block, location) {
 }
 
 async function getGeoBlockForRequest(req) {
-  const { channels, programmes } = await fetchEpg();
+  let channels = [];
+  let programmes = [];
+
+  try {
+    const epg = await fetchEpg();
+    channels = epg.channels;
+    programmes = epg.programmes;
+  } catch {
+    return null;
+  }
+
   const current = getCurrentProgrammeForStream(channels, programmes);
   if (!current) return null;
 
@@ -663,6 +790,10 @@ async function fetchEpgXml() {
   if (epgXmlCache && now - epgXmlCacheTime < EPG_CACHE_TTL) return epgXmlCache;
 
   const { epgUrl } = getGeneralRuntimeConfig();
+  if (!epgUrl) {
+    throw new Error('EPG_URL_NOT_CONFIGURED');
+  }
+
   const response = await axios.get(epgUrl, { responseType: 'text', timeout: 10000 });
   epgXmlCache = response.data;
   epgXmlCacheTime = now;
@@ -840,6 +971,9 @@ app.get('/epg/xmltv.xml', async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.send(xml);
   } catch (err) {
+    if (err.message === 'EPG_URL_NOT_CONFIGURED') {
+      return res.status(404).json({ error: 'URL de EPG nao configurada.' });
+    }
     console.error('[EPG] Erro ao buscar XMLTV:', err.message);
     res.status(502).json({ error: 'Não foi possível acessar o XMLTV.' });
   }
@@ -851,7 +985,9 @@ app.get('/api/public-config', (req, res) => {
   res.json({
     channelName: CHANNEL_NAME,
     version: getLocalAppVersion(),
-    faviconUrl: runtimeConfig.faviconUrl,
+    faviconUrl: runtimeConfig.homeCustomization.faviconUrl,
+    epgEnabled: Boolean(runtimeConfig.epgUrl),
+    homeCustomization: runtimeConfig.homeCustomization,
     streamStateVersion,
   });
 });
@@ -927,10 +1063,25 @@ app.get('/api/admin/general-settings', requireAdminAuth, (req, res) => {
   res.json({
     streamUrl: saved.streamUrl,
     epgUrl: saved.epgUrl,
-    faviconUrl: saved.faviconUrl,
     effectiveStreamUrl: runtime.streamUrl,
     effectiveEpgUrl: runtime.epgUrl,
-    effectiveFaviconUrl: runtime.faviconUrl,
+  });
+});
+
+app.get('/api/admin/home-customization', requireAdminAuth, (req, res) => {
+  const saved = readGeneralSettings();
+  const runtime = getGeneralRuntimeConfig();
+
+  res.json({
+    themePresets: Object.keys(HOME_THEME_PRESETS).map((key) => ({
+      key,
+      label: key.charAt(0).toUpperCase() + key.slice(1),
+      colors: HOME_THEME_PRESETS[key].colors,
+      fontFamily: HOME_THEME_PRESETS[key].fontFamily,
+    })),
+    allowedFonts: HOME_ALLOWED_FONTS,
+    saved: saved.homeCustomization,
+    effective: runtime.homeCustomization,
   });
 });
 
@@ -938,10 +1089,10 @@ app.post('/api/admin/general-settings', requireAdminAuth, async (req, res) => {
   const payload = {
     streamUrl: req.body?.streamUrl,
     epgUrl: req.body?.epgUrl,
-    faviconUrl: req.body?.faviconUrl,
+    homeCustomization: readGeneralSettings().homeCustomization,
   };
 
-  const invalidField = ['streamUrl', 'epgUrl', 'faviconUrl'].find((field) => {
+  const invalidField = ['streamUrl', 'epgUrl'].find((field) => {
     const value = String(payload[field] || '').trim();
     return value && !sanitizeOptionalUrl(value);
   });
@@ -973,6 +1124,42 @@ app.post('/api/admin/general-settings', requireAdminAuth, async (req, res) => {
   } catch (error) {
     console.error('[ADMIN] Erro ao salvar configuracoes gerais:', error.message);
     res.status(500).json({ error: 'Nao foi possivel salvar as configuracoes gerais.' });
+  }
+});
+
+app.post('/api/admin/home-customization', requireAdminAuth, async (req, res) => {
+  const rawHomeCustomization = req.body?.homeCustomization;
+  const currentSettings = readGeneralSettings();
+  const nextHomeCustomization = sanitizeHomeCustomization(rawHomeCustomization, currentSettings.homeCustomization);
+
+  const hasInvalidFavicon = String(rawHomeCustomization?.faviconUrl || '').trim() && !sanitizeOptionalUrl(rawHomeCustomization?.faviconUrl);
+  if (hasInvalidFavicon) {
+    return res.status(400).json({ error: 'Campo faviconUrl invalido. Use URL http(s) valida.' });
+  }
+
+  try {
+    const saved = await writeGeneralSettings({
+      streamUrl: currentSettings.streamUrl,
+      epgUrl: currentSettings.epgUrl,
+      homeCustomization: nextHomeCustomization,
+    });
+
+    bumpStreamStateVersion();
+
+    const responsePayload = {
+      message: 'Personalizacao salva com sucesso. O aplicativo sera reiniciado.',
+      restartScheduled: true,
+      homeCustomization: saved.homeCustomization,
+    };
+
+    res.json(responsePayload);
+
+    setTimeout(() => {
+      process.exit(0);
+    }, 1500);
+  } catch (error) {
+    console.error('[ADMIN] Erro ao salvar personalizacao da home:', error.message);
+    res.status(500).json({ error: 'Nao foi possivel salvar a personalizacao da home.' });
   }
 });
 
@@ -1109,6 +1296,9 @@ app.get('/api/epg/now', async (req, res) => {
 
     res.json(next);
   } catch (err) {
+    if (err.message === 'EPG_URL_NOT_CONFIGURED') {
+      return res.json([]);
+    }
     console.error('[EPG] Erro:', err.message);
     res.status(502).json({ error: 'Não foi possível buscar o EPG.' });
   }
@@ -1145,6 +1335,9 @@ app.get('/api/epg/grid', async (req, res) => {
 
     res.json(grid);
   } catch (err) {
+    if (err.message === 'EPG_URL_NOT_CONFIGURED') {
+      return res.json([]);
+    }
     console.error('[EPG] Erro ao montar grade:', err.message);
     res.status(502).json({ error: 'Não foi possível montar a grade EPG.' });
   }
@@ -1156,6 +1349,9 @@ app.get('/api/epg/channels', async (req, res) => {
     const { channels } = await fetchEpg();
     res.json(channels);
   } catch (err) {
+    if (err.message === 'EPG_URL_NOT_CONFIGURED') {
+      return res.json([]);
+    }
     res.status(502).json({ error: 'Erro ao buscar canais.' });
   }
 });
@@ -1220,6 +1416,10 @@ app.get('/bloqueios', requireAdminPage, (req, res) => {
 
 app.get('/configuracoes-gerais', requireAdminPage, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'settings.html'));
+});
+
+app.get('/personalizacao', requireAdminPage, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'personalization.html'));
 });
 
 app.get('/embed-opcao', requireAdminPage, (req, res) => {
