@@ -19,7 +19,7 @@
       position: fixed;
       inset: 0;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
     }
 
     .player-wrapper {
@@ -27,6 +27,7 @@
       width: 100%;
       height: 100%;
       background: #000;
+      flex: 1;
     }
 
     #video {
@@ -93,6 +94,174 @@
       animation: spin 1s linear infinite;
     }
 
+    .embed-widgets {
+      width: 320px;
+      max-width: 45vw;
+      overflow-y: auto;
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(180deg, rgba(9, 16, 27, 0.95), rgba(5, 11, 20, 0.98));
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .widget-card {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .widget-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 7px;
+    }
+
+    .widget-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .widget-meta {
+      margin-top: 6px;
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .widget-btn {
+      appearance: none;
+      border: 0;
+      border-radius: 8px;
+      padding: 9px 10px;
+      cursor: pointer;
+      background: #ffca28;
+      color: #1a1a1a;
+      font-weight: 700;
+      width: 100%;
+      text-align: center;
+    }
+
+    .embed-epg-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.76);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 20;
+    }
+
+    .embed-epg-modal {
+      width: min(900px, 100%);
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: #0b1625;
+      padding: 14px;
+    }
+
+    .embed-epg-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .embed-epg-close {
+      appearance: none;
+      border: 0;
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      cursor: pointer;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .embed-epg-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .embed-epg-detail {
+      border: 1px solid rgba(255, 202, 40, 0.28);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(255, 202, 40, 0.08);
+      margin-bottom: 10px;
+    }
+
+    .embed-epg-detail-title {
+      margin: 0 0 6px;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .embed-epg-detail-time {
+      color: #ffca28;
+      font-size: 0.84rem;
+      margin-bottom: 6px;
+    }
+
+    .embed-epg-detail-desc {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .embed-epg-item-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      width: 100%;
+      padding: 0;
+      cursor: pointer;
+      color: inherit;
+    }
+
+    .embed-epg-item {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 9px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .embed-epg-time {
+      font-size: 0.83rem;
+      color: #ffca28;
+      margin-bottom: 4px;
+    }
+
+    .embed-epg-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 900px) {
+      .embed-shell {
+        flex-direction: column;
+      }
+
+      .embed-widgets {
+        width: 100%;
+        max-width: 100%;
+        max-height: 42vh;
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -125,7 +294,20 @@
         <p id="error-msg">Sinal indisponivel no momento.</p>
       </div>
     </section>
+
+    <aside class="embed-widgets" id="embed-widgets"></aside>
   </main>
+
+  <div class="embed-epg-overlay" id="embed-epg-overlay">
+    <div class="embed-epg-modal">
+      <div class="embed-epg-head">
+        <h2 style="margin:0">Grade de programacao</h2>
+        <button type="button" class="embed-epg-close" id="embed-epg-close">x</button>
+      </div>
+      <div class="embed-epg-detail" id="embed-epg-detail" style="display:none"></div>
+      <div id="embed-epg-body">Carregando...</div>
+    </div>
+  </div>
 
   <script src="/embed.js"></script>
 </body>

@@ -2,7 +2,27 @@
 
 Interface web para exibição do canal ao vivo com grade EPG.
 
-Versão atual: **1.1.1**
+Versão atual: **1.1.2**
+
+## Changelog
+
+### 1.1.2
+
+- Embed configurável no admin (`/embed-opcao`): seleção de widgets, ordenação visual por arrastar e soltar e pré-visualização antes de salvar.
+- Persistência de configuração do embed em `general-settings.json` (`embedCustomization`) e novos endpoints:
+    - `GET /api/admin/embed-customization`
+    - `POST /api/admin/embed-customization`
+- Embed com widgets de programação e audiência:
+    - Botão da grade de programação
+    - Programa atual
+    - Próximo programa
+    - Audiência atual
+    - Audiência total
+- Grade do embed com detalhe clicável da atração (exibe informações do programa selecionado no modal).
+- Correção de acentuação/entidades HTML no EPG do embed (títulos, categorias e descrições).
+- Audiência total do embed alinhada ao mesmo valor de **Visitas totais** da página de estatísticas.
+- Inclusão de instalação rápida via imagem Docker pronta:
+    - `docker run -d -p 3000:3000 asabino2/webtvframework`
 
 ## Estrutura
 
@@ -40,6 +60,12 @@ A imagem Docker agora baixa o código diretamente do repositório GitHub:
 
 - Repositório: `https://github.com/asabino2/webtvframework`
 - Branch padrão: `main`
+
+Se preferir, você também pode subir direto com a imagem pública pronta:
+
+```bash
+docker run -d -p 3000:3000 asabino2/webtvframework
+```
 
 Build e execução:
 
@@ -95,6 +121,12 @@ No painel administrativo também existe a seção **Personalização da Home** (
 - Controles do player (Google Cast, tela cheia, volume e mudo)
 - URL do favicon (também usada como ícone ao lado do nome do canal)
 
+Na seção **Embed** (rota `/embed-opcao`) também é possível configurar os widgets exibidos junto ao player embed:
+
+- Exibir/ocultar widgets (grade, programa atual, próximo programa, audiência atual e audiência total)
+- Organizar visualmente a ordem dos widgets via arrastar e soltar
+- Pré-visualizar a ordem antes de salvar
+
 Ao salvar, os dados são gravados em:
 
 - `/app/data/general-settings.json`
@@ -129,6 +161,22 @@ Exemplo de `general-settings.json`:
             "volume": true,
             "mute": true
         }
+    },
+    "embedCustomization": {
+        "order": [
+            "epgButton",
+            "currentProgram",
+            "nextProgram",
+            "currentAudience",
+            "totalAudience"
+        ],
+        "enabled": {
+            "epgButton": true,
+            "currentProgram": true,
+            "nextProgram": true,
+            "currentAudience": true,
+            "totalAudience": false
+        }
     }
 }
 ```
@@ -139,6 +187,8 @@ Exemplo de `general-settings.json`:
 - `POST /api/admin/general-settings`: salva configurações e agenda restart da aplicação
 - `GET /api/admin/home-customization`: retorna personalização da home, temas e fontes permitidas
 - `POST /api/admin/home-customization`: salva personalização da home e agenda restart da aplicação
+- `GET /api/admin/embed-customization`: retorna configuração de widgets do embed
+- `POST /api/admin/embed-customization`: salva configuração de widgets do embed
 
 ### Embed do player
 
@@ -167,12 +217,15 @@ O embed mantém os mesmos recursos do player principal, incluindo:
 - Google Cast
 - Bloqueio regional
 - Restream HLS via backend
+- Widgets configuráveis (programação e audiência), com ordem visual personalizada no painel admin
+- Modal de grade de programação com detalhes clicáveis de cada atração
 
 Analytics no embed:
 
 - Conta como audiência em tempo real
 - Conta para visitas e estatísticas gerais
 - Registra `referrer` (site de origem), quando disponível
+- Widget de audiência total usa a mesma base de **Visitas totais** do painel de estatísticas
 
 Para alterar a porta do servidor:
 
@@ -190,6 +243,10 @@ PORT=8080 npm start
 - **Configurações Gerais**: painel admin com stream URL e EPG URL persistidos em `/app/data/general-settings.json`
 - **Personalização da Home**: painel admin com tema, cores, fonte, controles de player e favicon/ícone do canal
 - **Embed**: player incorporável em `/embed` com opção de cópia no admin em `/embed-opcao`
+- **Embed configurável**: escolha de widgets e ordenação visual dos cards no painel admin, refletindo automaticamente no `/embed`
+- **Grade no embed com detalhe**: ao clicar em um programa na grade, o modal mostra detalhes da atração selecionada
+- **Acentuação no EPG**: textos do EPG são decodificados corretamente ao exibir títulos, categorias e descrições
+- **Audiência total no embed**: métrica alinhada com o valor de **Visitas totais** das estatísticas
 - **Atualização no painel**: botão **Atualizar** aparece somente quando existir nova versão, com aviso de versão disponível
 - **Analytics por origem**: estatísticas exibem `referrer` (quando aplicável), incluindo acessos via embed
 - **Bloqueio regional por atração**: cadastro em `/bloqueios`; quando o programa atual estiver bloqueado para a região, o stream retorna mensagem de bloqueio

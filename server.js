@@ -94,6 +94,23 @@ const DEFAULT_HOME_CUSTOMIZATION = {
   faviconUrl: '',
   backgroundImageUrl: '',
 };
+const EMBED_WIDGET_IDS = [
+  'epgButton',
+  'currentProgram',
+  'nextProgram',
+  'currentAudience',
+  'totalAudience',
+];
+const DEFAULT_EMBED_CUSTOMIZATION = {
+  order: [...EMBED_WIDGET_IDS],
+  enabled: {
+    epgButton: true,
+    currentProgram: true,
+    nextProgram: true,
+    currentAudience: true,
+    totalAudience: false,
+  },
+};
 
 // Cache do EPG para evitar requisições repetidas
 let epgXmlCache = null;
@@ -192,6 +209,39 @@ function sanitizeHomeCustomization(value, fallback = DEFAULT_HOME_CUSTOMIZATION)
   };
 }
 
+function sanitizeEmbedCustomization(value, fallback = DEFAULT_EMBED_CUSTOMIZATION) {
+  const source = value && typeof value === 'object' ? value : {};
+  const fallbackOrder = Array.isArray(fallback?.order) ? fallback.order : DEFAULT_EMBED_CUSTOMIZATION.order;
+  const incomingOrder = Array.isArray(source.order) ? source.order : [];
+  const ordered = incomingOrder
+    .map((item) => String(item || '').trim())
+    .filter((item, index, list) => EMBED_WIDGET_IDS.includes(item) && list.indexOf(item) === index);
+  const order = [
+    ...ordered,
+    ...fallbackOrder.filter((id) => !ordered.includes(id)),
+    ...EMBED_WIDGET_IDS.filter((id) => !ordered.includes(id) && !fallbackOrder.includes(id)),
+  ];
+
+  const fallbackEnabled = fallback?.enabled && typeof fallback.enabled === 'object'
+    ? fallback.enabled
+    : DEFAULT_EMBED_CUSTOMIZATION.enabled;
+  const enabledSource = source.enabled && typeof source.enabled === 'object' ? source.enabled : {};
+  const enabled = {};
+
+  EMBED_WIDGET_IDS.forEach((id) => {
+    if (Object.prototype.hasOwnProperty.call(enabledSource, id)) {
+      enabled[id] = enabledSource[id] !== false;
+      return;
+    }
+    enabled[id] = fallbackEnabled[id] !== false;
+  });
+
+  return {
+    order,
+    enabled,
+  };
+}
+
 function readGeneralSettings() {
   ensureDataStore();
   try {
@@ -208,6 +258,7 @@ function readGeneralSettings() {
       epgUrl: sanitizeOptionalUrl(raw?.epgUrl),
       faviconUrl: savedFavicon,
       homeCustomization: sanitizeHomeCustomization(raw?.homeCustomization, fallbackHome),
+      embedCustomization: sanitizeEmbedCustomization(raw?.embedCustomization),
     };
   } catch {
     return {
@@ -216,6 +267,7 @@ function readGeneralSettings() {
       epgUrl: '',
       faviconUrl: '',
       homeCustomization: { ...DEFAULT_HOME_CUSTOMIZATION },
+      embedCustomization: sanitizeEmbedCustomization(),
     };
   }
 }
@@ -241,6 +293,7 @@ async function writeGeneralSettings(settings) {
       ...nextHomeCustomization,
       faviconUrl: nextFaviconUrl,
     },
+    embedCustomization: sanitizeEmbedCustomization(settings?.embedCustomization, existing.embedCustomization),
   };
 
   await fs.promises.writeFile(GENERAL_SETTINGS_FILE, JSON.stringify(payload, null, 2), 'utf8');
@@ -261,6 +314,7 @@ function getGeneralRuntimeConfig() {
     epgUrl: settings.epgUrl || DEFAULT_EPG_URL,
     faviconUrl: effectiveFaviconUrl,
     homeCustomization: sanitizeHomeCustomization(fallbackHome, settings.homeCustomization),
+    embedCustomization: sanitizeEmbedCustomization(settings.embedCustomization),
   };
 }
 
@@ -1009,6 +1063,7 @@ app.get('/api/public-config', (req, res) => {
     faviconUrl: runtimeConfig.faviconUrl,
     epgEnabled: Boolean(runtimeConfig.epgUrl),
     homeCustomization: runtimeConfig.homeCustomization,
+    embedCustomization: runtimeConfig.embedCustomization,
     streamStateVersion,
   });
 });
@@ -1111,6 +1166,17 @@ app.get('/api/admin/home-customization', requireAdminAuth, (req, res) => {
   });
 });
 
+app.get('/api/admin/embed-customization', requireAdminAuth, (req, res) => {
+  const saved = readGeneralSettings();
+  const runtime = getGeneralRuntimeConfig();
+
+  res.json({
+    widgets: EMBED_WIDGET_IDS,
+    saved: saved.embedCustomization,
+    effective: runtime.embedCustomization,
+  });
+});
+
 app.post('/api/admin/general-settings', requireAdminAuth, async (req, res) => {
   const payload = {
     channelName: req.body?.channelName,
@@ -1118,6 +1184,7 @@ app.post('/api/admin/general-settings', requireAdminAuth, async (req, res) => {
     epgUrl: req.body?.epgUrl,
     faviconUrl: req.body?.faviconUrl,
     homeCustomization: readGeneralSettings().homeCustomization,
+    embedCustomization: readGeneralSettings().embedCustomization,
   };
 
   const invalidField = ['streamUrl', 'epgUrl', 'faviconUrl'].find((field) => {
@@ -1167,6 +1234,7 @@ app.post('/api/admin/home-customization', requireAdminAuth, async (req, res) => 
       epgUrl: currentSettings.epgUrl,
       faviconUrl: currentSettings.faviconUrl,
       homeCustomization: nextHomeCustomization,
+      embedCustomization: currentSettings.embedCustomization,
     });
 
     bumpStreamStateVersion();
@@ -1185,6 +1253,32 @@ app.post('/api/admin/home-customization', requireAdminAuth, async (req, res) => 
   } catch (error) {
     console.error('[ADMIN] Erro ao salvar personalizacao da home:', error.message);
     res.status(500).json({ error: 'Nao foi possivel salvar a personalizacao da home.' });
+  }
+});
+
+app.post('/api/admin/embed-customization', requireAdminAuth, async (req, res) => {
+  const currentSettings = readGeneralSettings();
+  const nextEmbedCustomization = sanitizeEmbedCustomization(req.body?.embedCustomization, currentSettings.embedCustomization);
+
+  try {
+    const saved = await writeGeneralSettings({
+      channelName: currentSettings.channelName,
+      streamUrl: currentSettings.streamUrl,
+      epgUrl: currentSettings.epgUrl,
+      faviconUrl: currentSettings.faviconUrl,
+      homeCustomization: currentSettings.homeCustomization,
+      embedCustomization: nextEmbedCustomization,
+    });
+
+    bumpStreamStateVersion();
+
+    res.json({
+      message: 'Configuracao do embed salva com sucesso.',
+      embedCustomization: saved.embedCustomization,
+    });
+  } catch (error) {
+    console.error('[ADMIN] Erro ao salvar configuracao do embed:', error.message);
+    res.status(500).json({ error: 'Nao foi possivel salvar a configuracao do embed.' });
   }
 });
 
@@ -1256,6 +1350,17 @@ app.post('/api/analytics/session/end', (req, res) => {
 app.get('/api/analytics/live', (req, res) => {
   res.json({
     viewers: getCurrentViewerCount(),
+    updatedAt: new Date().toISOString(),
+  });
+});
+
+app.get('/api/analytics/public-summary', (req, res) => {
+  const visits = readVisits();
+  const totalVisits = visits.length;
+  res.json({
+    totalVisits,
+    totalViews: totalVisits,
+    currentViewers: getCurrentViewerCount(),
     updatedAt: new Date().toISOString(),
   });
 });

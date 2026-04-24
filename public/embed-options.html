@@ -65,6 +65,96 @@
       font-size: 0.9rem;
       margin: 0 0 14px;
     }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 10px;
+    }
+
+    .widget-options,
+    .widget-order {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .widget-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .widget-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .sortable-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sortable-item {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      cursor: move;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sortable-item.dragging {
+      opacity: 0.5;
+    }
+
+    .drag-handle {
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.6);
+      letter-spacing: 1px;
+    }
+
+    .mini-preview {
+      margin-top: 14px;
+      border: 1px dashed rgba(255, 255, 255, 0.25);
+      border-radius: 12px;
+      min-height: 120px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mini-widget {
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.85rem;
+      color: #f1f4f8;
+    }
+
+    .status-msg {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.85);
+      min-height: 20px;
+      margin: 12px 0 0;
+    }
+
+    @media (max-width: 900px) {
+      .layout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -85,6 +175,30 @@
 
       <button type="button" class="btn-primary" id="btn-copy-url">Copiar URL</button>
       <button type="button" class="btn-primary" id="btn-copy-code">Copiar iframe</button>
+    </section>
+
+    <section class="embed-card">
+      <h2>Widgets visiveis no embed</h2>
+      <p class="muted">Escolha os widgets e arraste para definir a ordem visual ao lado do player.</p>
+
+      <div class="layout-grid">
+        <div class="widget-options">
+          <h3>Exibir widgets</h3>
+          <div id="widget-options-list"></div>
+        </div>
+
+        <div class="widget-order">
+          <h3>Ordem visual</h3>
+          <p class="muted">Arraste os itens para reorganizar.</p>
+          <ul class="sortable-list" id="widget-order-list"></ul>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 18px;">Pre-visualizacao da ordem</h3>
+      <div class="mini-preview" id="mini-preview"></div>
+
+      <button type="button" class="btn-primary" id="btn-save-widgets" style="margin-top:16px;">Salvar configuracao</button>
+      <p class="status-msg" id="widget-status"></p>
     </section>
   </main>
 

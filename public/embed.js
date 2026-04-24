@@ -11,6 +11,23 @@
   const volRange = document.getElementById('volume-range');
   const btnCast = document.getElementById('btn-cast');
   const btnFS = document.getElementById('btn-fullscreen');
+  const widgetsContainer = document.getElementById('embed-widgets');
+  const epgOverlay = document.getElementById('embed-epg-overlay');
+  const epgBody = document.getElementById('embed-epg-body');
+  const epgClose = document.getElementById('embed-epg-close');
+  const epgDetail = document.getElementById('embed-epg-detail');
+
+  const WIDGET_IDS = ['epgButton', 'currentProgram', 'nextProgram', 'currentAudience', 'totalAudience'];
+  const DEFAULT_EMBED_CUSTOMIZATION = {
+    order: [...WIDGET_IDS],
+    enabled: {
+      epgButton: true,
+      currentProgram: true,
+      nextProgram: true,
+      currentAudience: true,
+      totalAudience: false,
+    },
+  };
 
   let hls = null;
   let analyticsSessionId = null;
@@ -18,6 +35,11 @@
   let streamStatePollTimer = null;
   let streamStateChannel = null;
   let streamStateVersion = 0;
+  let widgetPollers = [];
+  let epgEnabled = true;
+  let embedCustomization = { ...DEFAULT_EMBED_CUSTOMIZATION };
+  let customizationSignature = '';
+  let epgGridData = [];
 
   async function loadPublicConfig() {
     try {
@@ -36,6 +58,328 @@
     errorBox.style.display = show ? 'flex' : 'none';
     if (msg) errorMsg.textContent = msg;
   }
+
+  function sanitizeEmbedCustomization(raw) {
+    const source = raw && typeof raw === 'object' ? raw : {};
+    const incomingOrder = Array.isArray(source.order) ? source.order : [];
+    const uniqueOrder = incomingOrder
+      .map((id) => String(id || '').trim())
+      .filter((id, index, list) => WIDGET_IDS.includes(id) && list.indexOf(id) === index);
+
+    const order = [
+      ...uniqueOrder,
+      ...WIDGET_IDS.filter((id) => !uniqueOrder.includes(id)),
+    ];
+
+    const sourceEnabled = source.enabled && typeof source.enabled === 'object' ? source.enabled : {};
+    const enabled = {};
+    WIDGET_IDS.forEach((id) => {
+      enabled[id] = sourceEnabled[id] !== false;
+    });
+
+    return { order, enabled };
+  }
+
+  function applyRuntimeConfig(data) {
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+
+    epgEnabled = Boolean(data?.epgEnabled);
+    const nextCustomization = sanitizeEmbedCustomization(data?.embedCustomization || DEFAULT_EMBED_CUSTOMIZATION);
+    const nextSignature = JSON.stringify({ epgEnabled, nextCustomization });
+
+    if (nextSignature === customizationSignature) {
+      return;
+    }
+
+    customizationSignature = nextSignature;
+    embedCustomization = nextCustomization;
+    renderWidgets();
+    restartWidgetPolling();
+    refreshWidgetsNow();
+  }
+
+  function isWidgetEnabled(id) {
+    return embedCustomization.enabled?.[id] !== false;
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    const date = new Date(iso);
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function fmtUpdatedAt(iso) {
+    if (!iso) return 'Atualizacao indisponivel';
+    return `Atualizado as ${new Date(iso).toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })}`;
+  }
+
+  function renderWidgets() {
+    const enabledOrder = embedCustomization.order.filter((id) => isWidgetEnabled(id));
+
+    if (!enabledOrder.length) {
+      widgetsContainer.innerHTML = '<div class="widget-card">Nenhum widget habilitado no embed.</div>';
+      return;
+    }
+
+    const cards = enabledOrder.map((id) => {
+      if (id === 'epgButton') {
+        return `<div class="widget-card"><div class="widget-title">Grade de programacao</div><button class="widget-btn" id="widget-open-epg" ${epgEnabled ? '' : 'disabled'}>${epgEnabled ? 'Ver grade completa' : 'EPG indisponivel'}</button></div>`;
+      }
+
+      if (id === 'currentProgram') {
+        return `<div class="widget-card"><div class="widget-title">Programa atual</div><div class="widget-value" id="widget-current-title">Carregando...</div><div class="widget-meta" id="widget-current-time"></div><div class="widget-meta" id="widget-current-category"></div></div>`;
+      }
+
+      if (id === 'nextProgram') {
+        return `<div class="widget-card"><div class="widget-title">Proximo programa</div><div class="widget-value" id="widget-next-title">Carregando...</div><div class="widget-meta" id="widget-next-time"></div><div class="widget-meta" id="widget-next-category"></div></div>`;
+      }
+
+      if (id === 'currentAudience') {
+        return `<div class="widget-card"><div class="widget-title">Audiencia atual</div><div class="widget-value" id="widget-live-viewers">0</div><div class="widget-meta" id="widget-live-updated">Aguardando atualizacao...</div></div>`;
+      }
+
+      if (id === 'totalAudience') {
+        return `<div class="widget-card"><div class="widget-title">Audiencia total</div><div class="widget-value" id="widget-total-views">0</div><div class="widget-meta" id="widget-total-updated">Aguardando atualizacao...</div></div>`;
+      }
+
+      return '';
+    }).join('');
+
+    widgetsContainer.innerHTML = cards;
+
+    const openEpgButton = document.getElementById('widget-open-epg');
+    if (openEpgButton && epgEnabled) {
+      openEpgButton.addEventListener('click', openEpgModal);
+    }
+  }
+
+  function clearWidgetPolling() {
+    widgetPollers.forEach((timerId) => clearInterval(timerId));
+    widgetPollers = [];
+  }
+
+  function restartWidgetPolling() {
+    clearWidgetPolling();
+
+    if (isWidgetEnabled('currentProgram') || isWidgetEnabled('nextProgram')) {
+      widgetPollers.push(window.setInterval(updateEpgWidgets, 60_000));
+    }
+    if (isWidgetEnabled('currentAudience')) {
+      widgetPollers.push(window.setInterval(fetchLiveAudience, 10_000));
+    }
+    if (isWidgetEnabled('totalAudience')) {
+      widgetPollers.push(window.setInterval(fetchAudienceSummary, 30_000));
+    }
+  }
+
+  function refreshWidgetsNow() {
+    if (isWidgetEnabled('currentProgram') || isWidgetEnabled('nextProgram')) {
+      updateEpgWidgets();
+    }
+    if (isWidgetEnabled('currentAudience')) {
+      fetchLiveAudience();
+    }
+    if (isWidgetEnabled('totalAudience')) {
+      fetchAudienceSummary();
+    }
+  }
+
+  function esc(str) {
+    return decodeHtml(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function decodeHtml(str) {
+    if (!str) return '';
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = String(str);
+    return textarea.value;
+  }
+
+  function updateLiveAudienceCard(viewers, updatedAt) {
+    const count = document.getElementById('widget-live-viewers');
+    const updated = document.getElementById('widget-live-updated');
+    if (!count || !updated) return;
+
+    count.textContent = String(viewers || 0);
+    updated.textContent = fmtUpdatedAt(updatedAt || new Date().toISOString());
+  }
+
+  function updateTotalAudienceCard(totalViews, updatedAt) {
+    const total = document.getElementById('widget-total-views');
+    const updated = document.getElementById('widget-total-updated');
+    if (!total || !updated) return;
+
+    total.textContent = String(totalViews);
+    updated.textContent = fmtUpdatedAt(updatedAt || new Date().toISOString());
+  }
+
+  function updateEpgCards(entry) {
+    const currentTitle = document.getElementById('widget-current-title');
+    const currentTime = document.getElementById('widget-current-time');
+    const currentCategory = document.getElementById('widget-current-category');
+    const nextTitle = document.getElementById('widget-next-title');
+    const nextTime = document.getElementById('widget-next-time');
+    const nextCategory = document.getElementById('widget-next-category');
+
+    if (currentTitle) {
+      currentTitle.textContent = decodeHtml(entry?.current?.title || 'Sem programacao');
+    }
+    if (currentTime) {
+      if (entry?.current?.start && entry?.current?.stop) {
+        currentTime.textContent = `${fmtTime(entry.current.start)} - ${fmtTime(entry.current.stop)}`;
+      } else {
+        currentTime.textContent = '';
+      }
+    }
+    if (currentCategory) {
+      currentCategory.textContent = decodeHtml(entry?.current?.category || '');
+    }
+
+    if (nextTitle) {
+      nextTitle.textContent = decodeHtml(entry?.next?.title || 'Sem proximo programa');
+    }
+    if (nextTime) {
+      if (entry?.next?.start && entry?.next?.stop) {
+        nextTime.textContent = `${fmtTime(entry.next.start)} - ${fmtTime(entry.next.stop)}`;
+      } else {
+        nextTime.textContent = '';
+      }
+    }
+    if (nextCategory) {
+      nextCategory.textContent = decodeHtml(entry?.next?.category || '');
+    }
+  }
+
+  async function updateEpgWidgets() {
+    try {
+      const response = await fetch('/api/epg/now', { cache: 'no-store' });
+      const data = await response.json();
+      const entry = Array.isArray(data) ? data[0] : null;
+      updateEpgCards(entry);
+    } catch (_) {
+      updateEpgCards(null);
+    }
+  }
+
+  async function fetchLiveAudience() {
+    try {
+      const response = await fetch('/api/analytics/live', { cache: 'no-store' });
+      const data = await response.json();
+      updateLiveAudienceCard(data?.viewers || 0, data?.updatedAt);
+    } catch (_) {
+      // sem acao
+    }
+  }
+
+  async function fetchAudienceSummary() {
+    try {
+      const response = await fetch('/api/analytics/public-summary', { cache: 'no-store' });
+      if (!response.ok) return;
+      const data = await response.json();
+      const totalVisits = Number(data?.totalVisits ?? data?.totalViews);
+      if (Number.isFinite(totalVisits) && totalVisits >= 0) {
+        updateTotalAudienceCard(totalVisits, data?.updatedAt);
+      }
+      if (typeof data?.currentViewers === 'number') {
+        updateLiveAudienceCard(data.currentViewers, data.updatedAt);
+      }
+    } catch (_) {
+      // sem acao
+    }
+  }
+
+  function openEpgModal() {
+    epgOverlay.style.display = 'flex';
+    epgDetail.style.display = 'none';
+    epgDetail.innerHTML = '';
+    loadEpgGrid();
+  }
+
+  function closeEpgModal() {
+    epgOverlay.style.display = 'none';
+  }
+
+  async function loadEpgGrid() {
+    epgBody.textContent = 'Carregando...';
+
+    try {
+      const response = await fetch('/api/epg/grid', { cache: 'no-store' });
+      const grid = await response.json();
+      epgGridData = Array.isArray(grid) ? grid : [];
+
+      if (!epgGridData.length) {
+        epgBody.innerHTML = '<p>Nenhuma programacao disponivel.</p>';
+        return;
+      }
+
+      let html = '';
+      epgGridData.forEach((channelBlock, channelIndex) => {
+        const channelName = esc(channelBlock?.channel?.name || channelBlock?.channel?.id || 'Canal');
+        html += `<div class="widget-card"><div class="widget-title">${channelName}</div><div class="embed-epg-list">`;
+
+        const items = Array.isArray(channelBlock.programmes) ? channelBlock.programmes.slice(0, 80) : [];
+        items.forEach((programme, programIndex) => {
+          const title = esc(programme?.title || 'Sem titulo');
+          const desc = esc(programme?.desc || '');
+          const time = `${fmtTime(programme?.start)} - ${fmtTime(programme?.stop)}`;
+          html += `<button type="button" class="embed-epg-item-btn" data-channel-index="${channelIndex}" data-program-index="${programIndex}"><div class="embed-epg-item"><div class="embed-epg-time">${esc(time)}</div><div class="embed-epg-name">${title}</div>${desc ? `<div class="widget-meta">${desc}</div>` : ''}</div></button>`;
+        });
+
+        html += '</div></div>';
+      });
+
+      epgBody.innerHTML = html;
+    } catch (_) {
+      epgBody.innerHTML = '<p>Nao foi possivel carregar a grade de programacao.</p>';
+    }
+  }
+
+  function showProgrammeDetail(channelIndex, programIndex) {
+    const channelBlock = epgGridData[channelIndex];
+    const programme = channelBlock?.programmes?.[programIndex];
+    if (!programme) return;
+
+    const channelName = decodeHtml(channelBlock?.channel?.name || channelBlock?.channel?.id || 'Canal');
+    const title = decodeHtml(programme.title || 'Sem titulo');
+    const category = decodeHtml(programme.category || '');
+    const desc = decodeHtml(programme.desc || 'Sinopse indisponivel.');
+    const time = `${fmtTime(programme.start)} - ${fmtTime(programme.stop)}`;
+
+    epgDetail.innerHTML = `
+      <h3 class="embed-epg-detail-title">${esc(title)}</h3>
+      <div class="embed-epg-detail-time">${esc(time)} • ${esc(channelName)}${category ? ` • ${esc(category)}` : ''}</div>
+      <div class="embed-epg-detail-desc">${esc(desc)}</div>
+    `;
+    epgDetail.style.display = 'block';
+  }
+
+  epgClose.addEventListener('click', closeEpgModal);
+  epgBody.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const trigger = target.closest('.embed-epg-item-btn');
+    if (!trigger) return;
+
+    const channelIndex = Number(trigger.getAttribute('data-channel-index'));
+    const programIndex = Number(trigger.getAttribute('data-program-index'));
+    if (!Number.isInteger(channelIndex) || !Number.isInteger(programIndex)) return;
+    showProgrammeDetail(channelIndex, programIndex);
+  });
+  epgOverlay.addEventListener('click', (event) => {
+    if (event.target === epgOverlay) {
+      closeEpgModal();
+    }
+  });
 
   async function readStreamNotice() {
     try {
@@ -176,6 +520,7 @@
       });
       const data = await response.json();
       analyticsSessionId = data.sessionId;
+      updateLiveAudienceCard(data.viewers || 0, new Date().toISOString());
       heartbeatTimer = window.setInterval(sendHeartbeat, data.pingIntervalMs || 20000);
     } catch (_) {
       // sem ação
@@ -185,11 +530,17 @@
   async function sendHeartbeat() {
     if (!analyticsSessionId) return;
     try {
-      await fetch('/api/analytics/session/ping', {
+      const response = await fetch('/api/analytics/session/ping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: analyticsSessionId }),
       });
+      const data = await response.json().catch(() => ({}));
+      if (typeof data?.viewers === 'number') {
+        updateLiveAudienceCard(data.viewers, new Date().toISOString());
+      } else {
+        fetchLiveAudience();
+      }
     } catch (_) {
       // sem ação
     }
@@ -205,6 +556,7 @@
       clearInterval(streamStatePollTimer);
       streamStatePollTimer = null;
     }
+    clearWidgetPolling();
     if (streamStateChannel) {
       streamStateChannel.close();
       streamStateChannel = null;
@@ -224,6 +576,7 @@
 
   async function pollStreamState() {
     const data = await loadPublicConfig();
+    applyRuntimeConfig(data);
     const nextVersion = Number(data?.streamStateVersion) || 0;
     if (!nextVersion) return;
 
@@ -240,7 +593,12 @@
   startAnalyticsSession();
   loadPublicConfig().then((data) => {
     streamStateVersion = Number(data?.streamStateVersion) || 0;
-  }).catch(() => {});
+    applyRuntimeConfig(data);
+  }).catch(() => {
+    renderWidgets();
+    restartWidgetPolling();
+    refreshWidgetsNow();
+  });
   if ('BroadcastChannel' in window) {
     streamStateChannel = new BroadcastChannel('webtv-stream-state');
     streamStateChannel.addEventListener('message', () => {
