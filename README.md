@@ -2,9 +2,16 @@
 
 Interface web para exibição do canal ao vivo com grade EPG.
 
-Versão atual: **1.1.2**
+Versão atual: **1.1.3**
 
 ## Changelog
+
+### 1.1.3
+
+- Player da página inicial agora responde a controles remotos de smart TVs e TV boxes quando a home é aberta nesses dispositivos.
+- Detecção de dispositivos de TV para aplicar foco automático no player e permitir navegação por setas entre os botões visíveis do overlay.
+- Mapeamento de teclas comuns de controle remoto para play/pause, mute, volume, fullscreen e retorno ao player.
+- Melhorias de acessibilidade visual no player com foco destacado no container e nos botões de controle.
 
 ### 1.1.2
 

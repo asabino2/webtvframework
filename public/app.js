@@ -199,6 +199,12 @@
   let epgEnabled = true;
   let homeCustomization = null;
   let castApiAvailable = false;
+  const isTvDevice = detectTvDevice();
+
+  function detectTvDevice() {
+    const source = `${navigator.userAgent || ''} ${navigator.vendor || ''} ${(navigator.userAgentData?.platform || '')}`.toLowerCase();
+    return /(smart-tv|smarttv|hbbtv|netcast|viera|bravia|webos|web0s|tizen|googletv|google tv|android tv|aft|fire tv|roku|appletv|tv box|tvbrowser)/.test(source);
+  }
 
   function setDisplay(element, value) {
     if (!element) return;
@@ -224,6 +230,191 @@
   function updateCastButtonVisibility() {
     if (!btnCast) return;
     setDisplay(btnCast, (isCastEnabled() && castApiAvailable) ? 'flex' : 'none');
+  }
+
+  function isVisible(element) {
+    if (!element) return false;
+    return element.offsetParent !== null && getComputedStyle(element).visibility !== 'hidden';
+  }
+
+  function getRemoteButtons() {
+    return [btnPlay, btnMute, btnFS, btnCast].filter((button) => {
+      if (!button || button.disabled || !isVisible(button)) return false;
+      if (button === btnMute && !isMuteEnabled()) return false;
+      if (button === btnFS && !isFullscreenEnabled()) return false;
+      if (button === btnCast && (!isCastEnabled() || !castApiAvailable)) return false;
+      return true;
+    });
+  }
+
+  function focusPlayerForTv(force = false) {
+    if (!isTvDevice || !playerWrapper) return;
+
+    const active = document.activeElement;
+    const canReplaceFocus = !active || active === document.body || active === document.documentElement;
+
+    if (force || canReplaceFocus) {
+      playerWrapper.focus({ preventScroll: true });
+    }
+  }
+
+  function focusRemoteButton(direction) {
+    const buttons = getRemoteButtons();
+    if (!buttons.length) {
+      focusPlayerForTv(true);
+      return;
+    }
+
+    const activeIndex = buttons.indexOf(document.activeElement);
+    if (activeIndex === -1) {
+      buttons[direction > 0 ? 0 : buttons.length - 1].focus({ preventScroll: true });
+      return;
+    }
+
+    const nextIndex = (activeIndex + direction + buttons.length) % buttons.length;
+    buttons[nextIndex].focus({ preventScroll: true });
+  }
+
+  function adjustVolume(step) {
+    if (!isVolumeEnabled()) return;
+    const nextVolume = Math.max(0, Math.min(1, Number(video.volume || 0) + step));
+    video.volume = nextVolume;
+    video.muted = nextVolume === 0;
+    if (volRange) {
+      volRange.value = String(nextVolume.toFixed(2));
+    }
+    updateMuteIcon();
+  }
+
+  function togglePlayback() {
+    if (video.paused) {
+      video.play().catch(() => {});
+      return;
+    }
+    video.pause();
+  }
+
+  function canHandleRemoteKey(target) {
+    if (!target) return true;
+    const tagName = target.tagName;
+    return tagName !== 'INPUT' && tagName !== 'TEXTAREA' && tagName !== 'SELECT' && !target.isContentEditable;
+  }
+
+  function normalizeRemoteKey(event) {
+    const key = String(event.key || '').toLowerCase();
+    const code = Number(event.keyCode || event.which || 0);
+
+    if (key === 'mediaplaypause' || code === 179) return 'playpause';
+    if (key === 'mediaplay' || code === 415) return 'play';
+    if (key === 'mediapause' || code === 19) return 'pause';
+    if (key === 'mediastop' || code === 413) return 'stop';
+    if (key === 'audiovolumeup' || key === 'volumeup' || code === 447) return 'volumeup';
+    if (key === 'audiovolumedown' || key === 'volumedown' || code === 448) return 'volumedown';
+    if (key === 'audiovolumemute' || key === 'volumemute' || code === 449) return 'mute';
+    if (key === 'arrowleft' || code === 37) return 'left';
+    if (key === 'arrowright' || code === 39) return 'right';
+    if (key === 'arrowup' || code === 38) return 'up';
+    if (key === 'arrowdown' || code === 40) return 'down';
+    if (key === 'enter' || key === 'ok' || code === 13) return 'select';
+    if (key === 'backspace' || key === 'browserback' || key === 'goback' || key === 'escape' || code === 27 || code === 461 || code === 10009) return 'back';
+    if (key === 'f' || code === 70) return 'fullscreen';
+    return null;
+  }
+
+  function handleRemoteKey(event) {
+    const command = normalizeRemoteKey(event);
+    if (!command) return;
+    if (!isTvDevice && !['playpause', 'play', 'pause', 'stop', 'volumeup', 'volumedown', 'mute'].includes(command)) {
+      return;
+    }
+    if (!canHandleRemoteKey(event.target)) return;
+
+    if (isProgrammeDetailOpen()) {
+      if (command === 'back' || command === 'select') {
+        event.preventDefault();
+        closeProgrammeDetail();
+      }
+      return;
+    }
+
+    if (epgOverlay.classList.contains('open')) {
+      if (command === 'back') {
+        event.preventDefault();
+        closeEpgModal();
+        focusPlayerForTv(true);
+      }
+      return;
+    }
+
+    switch (command) {
+      case 'playpause':
+      case 'select':
+        event.preventDefault();
+        if (document.activeElement && document.activeElement !== playerWrapper && typeof document.activeElement.click === 'function') {
+          document.activeElement.click();
+        } else {
+          togglePlayback();
+        }
+        break;
+      case 'play':
+        event.preventDefault();
+        video.play().catch(() => {});
+        break;
+      case 'pause':
+      case 'stop':
+        event.preventDefault();
+        video.pause();
+        break;
+      case 'mute':
+        event.preventDefault();
+        if (isMuteEnabled()) {
+          video.muted = !video.muted;
+          updateMuteIcon();
+        }
+        break;
+      case 'volumeup':
+        event.preventDefault();
+        adjustVolume(0.05);
+        break;
+      case 'volumedown':
+        event.preventDefault();
+        adjustVolume(-0.05);
+        break;
+      case 'left':
+        if (!isTvDevice) break;
+        event.preventDefault();
+        focusRemoteButton(-1);
+        break;
+      case 'right':
+        if (!isTvDevice) break;
+        event.preventDefault();
+        focusRemoteButton(1);
+        break;
+      case 'up':
+        if (!isTvDevice) break;
+        event.preventDefault();
+        adjustVolume(0.05);
+        break;
+      case 'down':
+        if (!isTvDevice) break;
+        event.preventDefault();
+        adjustVolume(-0.05);
+        break;
+      case 'fullscreen':
+        if (!isTvDevice) break;
+        event.preventDefault();
+        toggleFullscreen();
+        break;
+      case 'back':
+        event.preventDefault();
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+        focusPlayerForTv(true);
+        break;
+      default:
+        break;
+    }
   }
 
   function updatePlayerControlsVisibility() {
@@ -521,11 +712,7 @@
 
   // ── Controles do Player ──────────────────────────────────────────────────
   btnPlay.addEventListener('click', () => {
-    if (video.paused) {
-      video.play();
-    } else {
-      video.pause();
-    }
+    togglePlayback();
   });
 
   video.addEventListener('play', () => {
@@ -585,6 +772,7 @@
   });
 
   btnRetry.addEventListener('click', initPlayer);
+  document.addEventListener('keydown', handleRemoteKey);
 
   // ── Google Cast ─────────────────────────────────────────────────────────
   window.__onGCastApiAvailable = function onGCastApiAvailable(isAvailable) {
@@ -1044,6 +1232,7 @@
   }).catch(() => {}).finally(() => {
     applyStaticTranslations();
     initPlayer();
+    focusPlayerForTv();
     restartEpgPolling();
     startAnalyticsSession();
     if ('BroadcastChannel' in window) {
