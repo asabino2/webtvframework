@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: tvsabinos-web
+    container_name: twebtvframework
     ports:
       - "3000:3000"
     volumes:

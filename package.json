@@ -1,7 +1,7 @@
 {
-  "name": "tvsabinos-web",
+  "name": "webtvframework",
   "version": "1.1.4",
-  "description": "Interface Web do Canal TV Sabinos",
+  "description": "Interface Web para canais de WebTV",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
