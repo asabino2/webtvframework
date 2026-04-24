@@ -2,9 +2,18 @@
 
 Interface web para exibição do canal ao vivo com grade EPG.
 
-Versão atual: **1.1.3**
+Versão atual: **1.1.4**
 
 ## Changelog
+
+### 1.1.4
+
+- Página de estatísticas exibe os **5 programas mais vistos** (ranqueados por tempo total assistido) logo após a tabela de visitas recentes.
+- Tabela de visitas recentes passa a mostrar o **tempo assistido** por sessão (coluna "Tempo assistido").
+- Backend captura o **programa em exibição no momento** em que a sessão começa, usando o cache de EPG já carregado.
+- Tempo de exibição calculado no servidor ao encerrar a sessão (`session/end`), resistente a erros de `beforeunload`.
+- Nova função `updateVisit` com fila serializada (`writeQueue`) para atualizar registros em `visits.json` sem condições de corrida.
+- Internacionalização (pt/en) dos novos elementos da página de estatísticas.
 
 ### 1.1.3
 

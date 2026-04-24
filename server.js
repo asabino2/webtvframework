@@ -359,6 +359,21 @@ function persistVisit(entry) {
   return writeQueue;
 }
 
+function updateVisit(sessionId, fields) {
+  writeQueue = writeQueue.then(async () => {
+    const visits = readVisits();
+    const index = visits.findIndex(v => v.sessionId === sessionId);
+    if (index !== -1) {
+      Object.assign(visits[index], fields);
+      await fs.promises.writeFile(VISITS_FILE, JSON.stringify(visits, null, 2), 'utf8');
+    }
+  }).catch(err => {
+    console.error('[ANALYTICS] Erro ao atualizar visita:', err.message);
+  });
+
+  return writeQueue;
+}
+
 function normalizeIp(ip) {
   if (!ip) return '0.0.0.0';
   if (ip.startsWith('::ffff:')) return ip.slice(7);
@@ -641,6 +656,17 @@ async function getGeoBlockForRequest(req) {
   return { message, programme: current, block: matchedBlock, location };
 }
 
+function getCurrentProgramTitle() {
+  try {
+    if (!epgParsedCache) return null;
+    const { channels, programmes } = epgParsedCache;
+    const current = getCurrentProgrammeForStream(channels, programmes);
+    return current?.title || null;
+  } catch {
+    return null;
+  }
+}
+
 function buildVisitEntry(req, sessionId) {
   const parser = new UAParser(req.headers['user-agent'] || '');
   const parsedUa = parser.getResult();
@@ -669,6 +695,7 @@ function buildVisitEntry(req, sessionId) {
     city: location.city,
     page: req.body?.page || '/',
     referrer,
+    currentProgram: getCurrentProgramTitle() || null,
   };
 }
 
@@ -821,6 +848,22 @@ function buildHourlySeries(items) {
   }
 
   return { labels, values };
+}
+
+function buildTopPrograms(visits, limit = 5) {
+  const map = new Map();
+  for (const v of visits) {
+    const title = v.currentProgram;
+    if (!title) continue;
+    const entry = map.get(title) || { views: 0, totalWatchSecs: 0 };
+    entry.views += 1;
+    entry.totalWatchSecs += Number(v.watchTimeSecs || 0);
+    map.set(title, entry);
+  }
+  return Array.from(map.entries())
+    .map(([title, stats]) => ({ title, ...stats }))
+    .sort((a, b) => b.totalWatchSecs - a.totalWatchSecs || b.views - a.views)
+    .slice(0, limit);
 }
 
 function parseXmltvDate(str) {
@@ -1340,7 +1383,12 @@ app.post('/api/analytics/session/ping', (req, res) => {
 
 app.post('/api/analytics/session/end', (req, res) => {
   const sessionId = req.body?.sessionId;
-  if (sessionId) {
+  if (sessionId && activeSessions.has(sessionId)) {
+    const session = activeSessions.get(sessionId);
+    const watchTimeSecs = Math.max(0, Math.round((Date.now() - session.startedAt) / 1000));
+    activeSessions.delete(sessionId);
+    updateVisit(sessionId, { watchTimeSecs });
+  } else if (sessionId) {
     activeSessions.delete(sessionId);
   }
 
@@ -1392,6 +1440,7 @@ app.get('/api/analytics/summary', requireAdminAuth, (req, res) => {
     topReferrers,
     hourlyVisits: buildHourlySeries(last24Hours),
     recentVisits,
+    topPrograms: buildTopPrograms(visits),
   });
 });
 

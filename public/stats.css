@@ -297,6 +297,20 @@ td {
   padding: 24px 0;
 }
 
+.watch-time-cell {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.prog-rank {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  width: 32px;
+}
+
 @media (max-width: 1080px) {
   .stats-grid-top,
   .stats-grid-main {

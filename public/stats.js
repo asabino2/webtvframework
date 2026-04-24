@@ -52,7 +52,15 @@
       emptyData: 'Ainda sem dados suficientes.',
       emptyVisits: 'Nenhuma visita registrada.',
       updatedAt: 'Atualizado as',
-      updating: 'Atualizando...'
+      updating: 'Atualizando...',
+      thWatchTime: 'Tempo assistido',
+      panelTopPrograms: 'Programas mais vistos',
+      panelTopProgramsSub: 'Top 5 atrações',
+      thProgRank: '#',
+      thProgTitle: 'Programa',
+      thProgViews: 'Visualizações',
+      thProgWatchTime: 'Tempo total',
+      noPrograms: 'Ainda sem dados de programas.'
     },
     en: {
       titleStats: 'Statistics',
@@ -89,7 +97,15 @@
       emptyData: 'Not enough data yet.',
       emptyVisits: 'No visits recorded.',
       updatedAt: 'Updated at',
-      updating: 'Updating...'
+      updating: 'Updating...',
+      thWatchTime: 'Watch time',
+      panelTopPrograms: 'Most watched programs',
+      panelTopProgramsSub: 'Top 5 titles',
+      thProgRank: '#',
+      thProgTitle: 'Program',
+      thProgViews: 'Views',
+      thProgWatchTime: 'Total watch time',
+      noPrograms: 'No program data yet.'
     }
   };
 
@@ -144,6 +160,13 @@
     setText('th-device', t('thDevice'));
     setText('th-location', t('thLocation'));
     setText('th-referrer', t('thReferrer'));
+    setText('th-watch-time', t('thWatchTime'));
+    setText('panel-top-programs-title', t('panelTopPrograms'));
+    setText('panel-top-programs-subtitle', t('panelTopProgramsSub'));
+    setText('th-prog-rank', t('thProgRank'));
+    setText('th-prog-title', t('thProgTitle'));
+    setText('th-prog-views', t('thProgViews'));
+    setText('th-prog-watch-time', t('thProgWatchTime'));
 
     if (updatedAt && !updatedAt.textContent) {
       updatedAt.textContent = t('updating');
@@ -225,6 +248,18 @@
     }).join('');
   }
 
+  function fmtWatchTime(secs) {
+    const s = Number(secs);
+    if (!s || s < 0) return '—';
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    if (m < 60) return rem ? `${m}m ${rem}s` : `${m}m`;
+    const h = Math.floor(m / 60);
+    const remM = m % 60;
+    return remM ? `${h}h ${remM}m` : `${h}h`;
+  }
+
   function renderRecentVisits(items) {
     if (!items || !items.length) {
       recentVisits.innerHTML = `<tr><td colspan="7" class="empty-state">${t('emptyVisits')}</td></tr>`;
@@ -240,6 +275,24 @@
         <td>${escapeHtml(item.device)}</td>
         <td>${escapeHtml(`${item.city}, ${item.state}, ${item.country}`)}</td>
         <td>${escapeHtml(item.referrer || t('directAccess'))}</td>
+        <td class="watch-time-cell">${fmtWatchTime(item.watchTimeSecs)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderTopPrograms(items) {
+    const tbody = document.getElementById('top-programs-body');
+    if (!tbody) return;
+    if (!items || !items.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${t('noPrograms')}</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map((item, index) => `
+      <tr>
+        <td class="prog-rank">${index + 1}</td>
+        <td>${escapeHtml(item.title)}</td>
+        <td>${item.views}</td>
+        <td class="watch-time-cell">${fmtWatchTime(item.totalWatchSecs)}</td>
       </tr>
     `).join('');
   }
@@ -269,6 +322,7 @@
     renderPieChart(topCities, data.topCities);
     renderPieChart(topReferrers, data.topReferrers);
     renderRecentVisits(data.recentVisits);
+    renderTopPrograms(data.topPrograms || []);
   }
 
   applyStaticTranslations();
