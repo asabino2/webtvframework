@@ -2,12 +2,12 @@
 
 Interface web para streaming ao vivo com EPG, analytics, embed e painel administrativo.
 
-[![Version](https://img.shields.io/badge/version-1.1.4-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
+[![Version](https://img.shields.io/badge/version-1.1.5-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 [![Node.js](https://img.shields.io/badge/node.js-18%2B-339933?logo=nodedotjs&logoColor=white&style=for-the-badge)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/status-active-2ea44f?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 
-Versão atual: **1.1.4**
+Versão atual: **1.1.5**
 
 ## 📺 Visão geral
 
@@ -113,6 +113,7 @@ webtvframework/
 ├─ data/
 │  ├─ general-settings.json
 │  ├─ region-blocks.json
+│  ├─ visits.db
 │  └─ visits.json
 └─ public/
    ├─ index.html / app.js / style.css
@@ -136,6 +137,24 @@ webtvframework/
 - Personalização de tema, fonte, cores e controles do player
 
 ## 📝 Changelog recente
+
+### 1.1.5
+
+- Persistência de visitas migrada para SQLite com `data/visits.db`
+- Inicialização automática do banco e criação da estrutura necessária ao subir o servidor
+- Migração automática de registros legados de `visits.json` para `visits.db` no startup, com limpeza do JSON
+- Enriquecimento de dados de visita com:
+  - navegador e versão
+  - sistema operacional e versão
+  - user-agent
+  - ISP
+  - localização detalhada (bairro, cidade, estado e país)
+  - tipo de acesso (página inicial, embed ou stream HLS)
+- Registro de acesso direto ao stream HLS nas estatísticas
+- Popup de detalhes da visita na tela de estatísticas com ícone de informação por linha
+- Correção do popup de detalhes para iniciar fechado e permitir fechamento consistente
+- Inclusão da atração/programa assistido no popup de detalhes
+- Ajuste de estatísticas percentuais de navegador para considerar apenas o nome do navegador (sem versão)
 
 ### 1.1.4
 

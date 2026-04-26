@@ -6,6 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
+const sqlite3 = require('sqlite3').verbose();
 const geoip = require('geoip-lite');
 const UAParser = require('ua-parser-js');
 
@@ -13,10 +14,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
 const VISITS_FILE = path.join(DATA_DIR, 'visits.json');
+const VISITS_DB_FILE = path.join(DATA_DIR, 'visits.db');
 const BLOCKS_FILE = path.join(DATA_DIR, 'region-blocks.json');
 const GENERAL_SETTINGS_FILE = path.join(DATA_DIR, 'general-settings.json');
 const VIEWER_TTL_MS = 45 * 1000;
 const SESSION_PING_MS = 20 * 1000;
+const DIRECT_STREAM_TTL_MS = 70 * 1000;
+const GEO_PROFILE_TTL_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_CHANNEL_NAME = process.env.CHANNEL_NAME || 'Webtv framework';
 const ADMIN_PASSWORD = String(process.env.PASSWORD || process.env.password || '').trim();
 const ADMIN_COOKIE_NAME = 'tvs_admin_auth';
@@ -120,7 +124,9 @@ let epgParsedCacheTime = 0;
 const EPG_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 let noticeSegmentBuffer = null;
 const activeSessions = new Map();
-let writeQueue = Promise.resolve();
+const directStreamSessions = new Map();
+const geoProfileCache = new Map();
+let visitsDb = null;
 let streamStateVersion = 1;
 
 app.set('trust proxy', true);
@@ -138,6 +144,254 @@ function ensureDataStore() {
   }
   if (!fs.existsSync(GENERAL_SETTINGS_FILE)) {
     fs.writeFileSync(GENERAL_SETTINGS_FILE, '{}', 'utf8');
+  }
+}
+
+function openVisitsDatabase(filePath) {
+  return new Promise((resolve, reject) => {
+    const db = new sqlite3.Database(filePath, (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(db);
+    });
+  });
+}
+
+function runSql(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    if (!visitsDb) {
+      reject(new Error('Banco de visitas não inicializado.'));
+      return;
+    }
+
+    visitsDb.run(sql, params, function onRun(error) {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(this);
+    });
+  });
+}
+
+function getSql(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    if (!visitsDb) {
+      reject(new Error('Banco de visitas não inicializado.'));
+      return;
+    }
+
+    visitsDb.get(sql, params, (error, row) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(row || null);
+    });
+  });
+}
+
+function allSql(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    if (!visitsDb) {
+      reject(new Error('Banco de visitas não inicializado.'));
+      return;
+    }
+
+    visitsDb.all(sql, params, (error, rows) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(Array.isArray(rows) ? rows : []);
+    });
+  });
+}
+
+function classifyAccessType(page) {
+  const normalizedPage = String(page || '').toLowerCase();
+  if (normalizedPage.includes('/embed')) return 'embed';
+  if (normalizedPage.includes('.m3u8') || normalizedPage.includes('/stream')) return 'hls_stream';
+  return 'home';
+}
+
+function normalizeVisitForStorage(entry) {
+  const sessionId = String(entry?.sessionId || crypto.randomUUID());
+  const startedAt = String(entry?.startedAt || entry?.visitedAt || new Date().toISOString());
+  const endedAt = entry?.endedAt ? String(entry.endedAt) : null;
+  const watchTimeSecs = Math.max(0, Number(entry?.watchTimeSecs || 0));
+  const browserName = String(entry?.browserName || entry?.browser || 'Desconhecido').trim() || 'Desconhecido';
+  const browserVersion = String(entry?.browserVersion || '').trim();
+  const operatingSystemName = String(entry?.operatingSystemName || entry?.operatingSystem || 'Desconhecido').trim() || 'Desconhecido';
+  const operatingSystemVersion = String(entry?.operatingSystemVersion || '').trim();
+  const page = String(entry?.page || '/').trim() || '/';
+  const accessType = String(entry?.accessType || classifyAccessType(page)).trim() || 'home';
+
+  return {
+    sessionId,
+    startedAt,
+    endedAt,
+    watchTimeSecs,
+    ip: String(entry?.ip || '0.0.0.0').trim() || '0.0.0.0',
+    page,
+    accessType,
+    referrer: String(entry?.referrer || '').trim(),
+    currentProgram: entry?.currentProgram ? String(entry.currentProgram).trim() : null,
+    browserName,
+    browserVersion,
+    operatingSystemName,
+    operatingSystemVersion,
+    device: String(entry?.device || 'Desconhecido').trim() || 'Desconhecido',
+    country: String(entry?.country || 'Desconhecido').trim() || 'Desconhecido',
+    state: String(entry?.state || 'Desconhecido').trim() || 'Desconhecido',
+    city: String(entry?.city || 'Desconhecido').trim() || 'Desconhecido',
+    neighborhood: String(entry?.neighborhood || 'Desconhecido').trim() || 'Desconhecido',
+    isp: String(entry?.isp || 'Desconhecido').trim() || 'Desconhecido',
+    userAgent: String(entry?.userAgent || '').trim(),
+  };
+}
+
+function mapVisitRowToApi(row) {
+  const browser = [row.browser_name, row.browser_version].filter(Boolean).join(' ').trim() || 'Desconhecido';
+  const operatingSystem = [row.operating_system_name, row.operating_system_version]
+    .filter(Boolean)
+    .join(' ')
+    .trim() || 'Desconhecido';
+
+  return {
+    sessionId: row.session_id,
+    visitedAt: row.started_at,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    watchTimeSecs: Number(row.watch_time_secs || 0),
+    ip: row.ip,
+    page: row.page,
+    accessType: row.access_type,
+    referrer: row.referrer,
+    currentProgram: row.current_program,
+    browser,
+    browserName: row.browser_name,
+    browserVersion: row.browser_version,
+    operatingSystem,
+    operatingSystemName: row.operating_system_name,
+    operatingSystemVersion: row.operating_system_version,
+    device: row.device,
+    country: row.country,
+    state: row.state,
+    city: row.city,
+    neighborhood: row.neighborhood,
+    isp: row.isp,
+    userAgent: row.user_agent,
+  };
+}
+
+async function upsertVisit(entry) {
+  const visit = normalizeVisitForStorage(entry);
+  await runSql(
+    `INSERT INTO visits (
+      session_id, started_at, ended_at, watch_time_secs, ip, page, access_type, referrer, current_program,
+      browser_name, browser_version, operating_system_name, operating_system_version, device,
+      country, state, city, neighborhood, isp, user_agent
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(session_id) DO UPDATE SET
+      started_at = excluded.started_at,
+      ended_at = excluded.ended_at,
+      watch_time_secs = excluded.watch_time_secs,
+      ip = excluded.ip,
+      page = excluded.page,
+      access_type = excluded.access_type,
+      referrer = excluded.referrer,
+      current_program = excluded.current_program,
+      browser_name = excluded.browser_name,
+      browser_version = excluded.browser_version,
+      operating_system_name = excluded.operating_system_name,
+      operating_system_version = excluded.operating_system_version,
+      device = excluded.device,
+      country = excluded.country,
+      state = excluded.state,
+      city = excluded.city,
+      neighborhood = excluded.neighborhood,
+      isp = excluded.isp,
+      user_agent = excluded.user_agent`,
+    [
+      visit.sessionId,
+      visit.startedAt,
+      visit.endedAt,
+      visit.watchTimeSecs,
+      visit.ip,
+      visit.page,
+      visit.accessType,
+      visit.referrer,
+      visit.currentProgram,
+      visit.browserName,
+      visit.browserVersion,
+      visit.operatingSystemName,
+      visit.operatingSystemVersion,
+      visit.device,
+      visit.country,
+      visit.state,
+      visit.city,
+      visit.neighborhood,
+      visit.isp,
+      visit.userAgent,
+    ]
+  );
+}
+
+async function initializeVisitsDatabase() {
+  ensureDataStore();
+  visitsDb = await openVisitsDatabase(VISITS_DB_FILE);
+
+  await runSql('PRAGMA journal_mode = WAL');
+  await runSql(`CREATE TABLE IF NOT EXISTS visits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL UNIQUE,
+    started_at TEXT NOT NULL,
+    ended_at TEXT,
+    watch_time_secs INTEGER NOT NULL DEFAULT 0,
+    ip TEXT NOT NULL,
+    page TEXT NOT NULL,
+    access_type TEXT NOT NULL,
+    referrer TEXT,
+    current_program TEXT,
+    browser_name TEXT,
+    browser_version TEXT,
+    operating_system_name TEXT,
+    operating_system_version TEXT,
+    device TEXT,
+    country TEXT,
+    state TEXT,
+    city TEXT,
+    neighborhood TEXT,
+    isp TEXT,
+    user_agent TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+  await runSql('CREATE INDEX IF NOT EXISTS idx_visits_started_at ON visits(started_at)');
+  await runSql('CREATE INDEX IF NOT EXISTS idx_visits_ip ON visits(ip)');
+  await runSql('CREATE INDEX IF NOT EXISTS idx_visits_access_type ON visits(access_type)');
+
+  if (fs.existsSync(VISITS_FILE)) {
+    let legacyVisits = [];
+    try {
+      const parsed = JSON.parse(fs.readFileSync(VISITS_FILE, 'utf8'));
+      if (Array.isArray(parsed)) {
+        legacyVisits = parsed;
+      }
+    } catch {
+      legacyVisits = [];
+    }
+
+    if (legacyVisits.length) {
+      for (const entry of legacyVisits) {
+        // Mantém dados legados e completa os novos campos com fallback padrão.
+        await upsertVisit(entry);
+      }
+    }
+
+    await fs.promises.writeFile(VISITS_FILE, '[]', 'utf8');
   }
 }
 
@@ -323,13 +577,9 @@ function bumpStreamStateVersion() {
   return streamStateVersion;
 }
 
-function readVisits() {
-  ensureDataStore();
-  try {
-    return JSON.parse(fs.readFileSync(VISITS_FILE, 'utf8'));
-  } catch {
-    return [];
-  }
+async function readVisits() {
+  const rows = await allSql('SELECT * FROM visits ORDER BY started_at ASC');
+  return rows.map(mapVisitRowToApi);
 }
 
 function readRegionBlocks() {
@@ -347,31 +597,31 @@ async function writeRegionBlocks(blocks) {
   await fs.promises.writeFile(BLOCKS_FILE, JSON.stringify(blocks, null, 2), 'utf8');
 }
 
-function persistVisit(entry) {
-  writeQueue = writeQueue.then(async () => {
-    const visits = readVisits();
-    visits.push(entry);
-    await fs.promises.writeFile(VISITS_FILE, JSON.stringify(visits, null, 2), 'utf8');
-  }).catch(err => {
-    console.error('[ANALYTICS] Erro ao gravar visitas:', err.message);
-  });
-
-  return writeQueue;
+async function persistVisit(entry) {
+  try {
+    await upsertVisit(entry);
+  } catch (err) {
+    console.error('[ANALYTICS] Erro ao gravar visitas no SQLite:', err.message);
+  }
 }
 
-function updateVisit(sessionId, fields) {
-  writeQueue = writeQueue.then(async () => {
-    const visits = readVisits();
-    const index = visits.findIndex(v => v.sessionId === sessionId);
-    if (index !== -1) {
-      Object.assign(visits[index], fields);
-      await fs.promises.writeFile(VISITS_FILE, JSON.stringify(visits, null, 2), 'utf8');
-    }
-  }).catch(err => {
-    console.error('[ANALYTICS] Erro ao atualizar visita:', err.message);
-  });
+async function updateVisit(sessionId, fields) {
+  try {
+    const row = await getSql('SELECT * FROM visits WHERE session_id = ?', [sessionId]);
+    if (!row) return;
 
-  return writeQueue;
+    const existing = mapVisitRowToApi(row);
+    const merged = {
+      ...existing,
+      ...fields,
+      sessionId,
+      startedAt: existing.startedAt,
+      visitedAt: existing.visitedAt,
+    };
+    await upsertVisit(merged);
+  } catch (err) {
+    console.error('[ANALYTICS] Erro ao atualizar visita no SQLite:', err.message);
+  }
 }
 
 function normalizeIp(ip) {
@@ -399,7 +649,7 @@ function isPrivateIp(ip) {
   );
 }
 
-function getLocationFromIp(ip) {
+function getLocationFromGeoLite(ip) {
   if (isPrivateIp(ip)) {
     return {
       country: 'Rede local',
@@ -414,6 +664,57 @@ function getLocationFromIp(ip) {
     region: lookup?.region || 'Desconhecido',
     city: lookup?.city || 'Desconhecido',
   };
+}
+
+async function getLocationProfile(ip) {
+  if (isPrivateIp(ip)) {
+    return {
+      country: 'Rede local',
+      state: 'Rede interna',
+      city: 'Rede interna',
+      neighborhood: 'Rede interna',
+      isp: 'Rede interna',
+    };
+  }
+
+  const cached = geoProfileCache.get(ip);
+  const now = Date.now();
+  if (cached && now - cached.savedAt < GEO_PROFILE_TTL_MS) {
+    return cached.value;
+  }
+
+  const fallback = getLocationFromGeoLite(ip);
+  const fallbackProfile = {
+    country: fallback.country,
+    state: fallback.region,
+    city: fallback.city,
+    neighborhood: 'Desconhecido',
+    isp: 'Desconhecido',
+  };
+
+  try {
+    const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,regionName,city,district,isp`;
+    const response = await axios.get(url, { timeout: 2500 });
+    const data = response.data || {};
+
+    if (data.status !== 'success') {
+      geoProfileCache.set(ip, { value: fallbackProfile, savedAt: now });
+      return fallbackProfile;
+    }
+
+    const profile = {
+      country: String(data.country || fallbackProfile.country || 'Desconhecido'),
+      state: String(data.regionName || fallbackProfile.state || 'Desconhecido'),
+      city: String(data.city || fallbackProfile.city || 'Desconhecido'),
+      neighborhood: String(data.district || 'Desconhecido'),
+      isp: String(data.isp || 'Desconhecido'),
+    };
+    geoProfileCache.set(ip, { value: profile, savedAt: now });
+    return profile;
+  } catch {
+    geoProfileCache.set(ip, { value: fallbackProfile, savedAt: now });
+    return fallbackProfile;
+  }
 }
 
 function getDeviceLabel(parsedUa) {
@@ -644,7 +945,7 @@ async function getGeoBlockForRequest(req) {
   const current = getCurrentProgrammeForStream(channels, programmes);
   if (!current) return null;
 
-  const location = getLocationFromIp(getClientIp(req));
+  const location = getLocationFromGeoLite(getClientIp(req));
   const blocks = readRegionBlocks().filter(block => block.active !== false);
 
   const matchedBlock = blocks.find(block => isProgrammeBlocked(current, block, location));
@@ -667,12 +968,17 @@ function getCurrentProgramTitle() {
   }
 }
 
-function buildVisitEntry(req, sessionId) {
+async function buildVisitEntry(req, sessionId, overrides = {}) {
   const parser = new UAParser(req.headers['user-agent'] || '');
   const parsedUa = parser.getResult();
   const ip = getClientIp(req);
-  const location = getLocationFromIp(ip);
-  const rawReferrer = String(req.body?.referrer || req.headers.referer || '').trim();
+  const location = await getLocationProfile(ip);
+  const page = String(overrides.page || req.body?.page || req.path || '/').trim() || '/';
+  const rawReferrer = String(overrides.referrer || req.body?.referrer || req.headers.referer || '').trim();
+  const browserName = parsedUa.browser?.name || 'Desconhecido';
+  const browserVersion = parsedUa.browser?.version || '';
+  const operatingSystemName = parsedUa.os?.name || 'Desconhecido';
+  const operatingSystemVersion = parsedUa.os?.version || '';
   let referrer = '';
 
   if (rawReferrer) {
@@ -686,17 +992,65 @@ function buildVisitEntry(req, sessionId) {
   return {
     sessionId,
     visitedAt: new Date().toISOString(),
+    startedAt: new Date().toISOString(),
+    endedAt: null,
+    watchTimeSecs: Number(overrides.watchTimeSecs || 0),
     ip,
-    operatingSystem: parsedUa.os?.name || 'Desconhecido',
+    operatingSystem: [operatingSystemName, operatingSystemVersion].filter(Boolean).join(' ').trim() || 'Desconhecido',
+    operatingSystemName,
+    operatingSystemVersion,
     device: getDeviceLabel(parsedUa),
-    browser: parsedUa.browser?.name || 'Desconhecido',
+    browser: [browserName, browserVersion].filter(Boolean).join(' ').trim() || 'Desconhecido',
+    browserName,
+    browserVersion,
     country: location.country,
-    state: location.region,
+    state: location.state,
     city: location.city,
-    page: req.body?.page || '/',
+    neighborhood: location.neighborhood,
+    isp: location.isp,
+    page,
+    accessType: String(overrides.accessType || classifyAccessType(page)),
     referrer,
     currentProgram: getCurrentProgramTitle() || null,
+    userAgent: String(req.headers['user-agent'] || ''),
   };
+}
+
+async function trackDirectStreamVisit(req) {
+  const ip = getClientIp(req);
+  const userAgent = String(req.headers['user-agent'] || '');
+  const key = `${ip}|${userAgent}`;
+  const now = Date.now();
+  const current = directStreamSessions.get(key);
+
+  if (current && now - current.lastSeenAt <= DIRECT_STREAM_TTL_MS) {
+    const watchTimeSecs = Math.max(0, Math.round((now - current.startedAt) / 1000));
+    directStreamSessions.set(key, {
+      ...current,
+      lastSeenAt: now,
+    });
+    await updateVisit(current.sessionId, {
+      endedAt: new Date(now).toISOString(),
+      watchTimeSecs,
+      accessType: 'hls_stream',
+      page: '/stream/playlist.m3u8',
+    });
+    return;
+  }
+
+  const sessionId = crypto.randomUUID();
+  const visit = await buildVisitEntry(req, sessionId, {
+    page: '/stream/playlist.m3u8',
+    accessType: 'hls_stream',
+    referrer: req.headers.referer || '',
+  });
+
+  directStreamSessions.set(key, {
+    sessionId,
+    startedAt: now,
+    lastSeenAt: now,
+  });
+  await persistVisit(visit);
 }
 
 function parseCookies(req) {
@@ -748,6 +1102,21 @@ function cleanupExpiredSessions() {
   for (const [sessionId, session] of activeSessions.entries()) {
     if (now - session.lastSeenAt > VIEWER_TTL_MS) {
       activeSessions.delete(sessionId);
+    }
+  }
+
+  for (const [key, session] of directStreamSessions.entries()) {
+    if (now - session.lastSeenAt > DIRECT_STREAM_TTL_MS) {
+      directStreamSessions.delete(key);
+      const watchTimeSecs = Math.max(0, Math.round((session.lastSeenAt - session.startedAt) / 1000));
+      updateVisit(session.sessionId, {
+        endedAt: new Date(session.lastSeenAt).toISOString(),
+        watchTimeSecs,
+        accessType: 'hls_stream',
+        page: '/stream/playlist.m3u8',
+      }).catch((error) => {
+        console.error('[ANALYTICS] Erro ao fechar sessão HLS expirada:', error.message);
+      });
     }
   }
 }
@@ -969,7 +1338,6 @@ async function fetchEpg() {
   return epgParsedCache;
 }
 
-ensureDataStore();
 setInterval(cleanupExpiredSessions, SESSION_PING_MS);
 
 // ── Rotas: Proxy HLS ─────────────────────────────────────────────────────────
@@ -977,6 +1345,10 @@ setInterval(cleanupExpiredSessions, SESSION_PING_MS);
 // Proxy para o playlist .m3u8 — reescreve URLs internas para passar pelo nosso servidor
 app.get('/stream/playlist.m3u8', async (req, res) => {
   try {
+    trackDirectStreamVisit(req).catch((error) => {
+      console.error('[ANALYTICS] Erro ao registrar visita HLS:', error.message);
+    });
+
     const geoBlock = await getGeoBlockForRequest(req);
     if (geoBlock) {
       sendNoticeAsPlaylist(res, geoBlock.message);
@@ -1353,7 +1725,7 @@ app.post('/api/admin/auth/logout', (req, res) => {
 
 app.post('/api/analytics/session/start', async (req, res) => {
   const sessionId = crypto.randomUUID();
-  const visit = buildVisitEntry(req, sessionId);
+  const visit = await buildVisitEntry(req, sessionId);
 
   activeSessions.set(sessionId, {
     startedAt: Date.now(),
@@ -1387,7 +1759,12 @@ app.post('/api/analytics/session/end', (req, res) => {
     const session = activeSessions.get(sessionId);
     const watchTimeSecs = Math.max(0, Math.round((Date.now() - session.startedAt) / 1000));
     activeSessions.delete(sessionId);
-    updateVisit(sessionId, { watchTimeSecs });
+    updateVisit(sessionId, {
+      endedAt: new Date().toISOString(),
+      watchTimeSecs,
+    }).catch((error) => {
+      console.error('[ANALYTICS] Erro ao fechar sessão:', error.message);
+    });
   } else if (sessionId) {
     activeSessions.delete(sessionId);
   }
@@ -1402,8 +1779,8 @@ app.get('/api/analytics/live', (req, res) => {
   });
 });
 
-app.get('/api/analytics/public-summary', (req, res) => {
-  const visits = readVisits();
+app.get('/api/analytics/public-summary', async (req, res) => {
+  const visits = await readVisits();
   const totalVisits = visits.length;
   res.json({
     totalVisits,
@@ -1413,8 +1790,8 @@ app.get('/api/analytics/public-summary', (req, res) => {
   });
 });
 
-app.get('/api/analytics/summary', requireAdminAuth, (req, res) => {
-  const visits = readVisits();
+app.get('/api/analytics/summary', requireAdminAuth, async (req, res) => {
+  const visits = await readVisits();
   const now = Date.now();
   const last24Hours = visits.filter(item => now - new Date(item.visitedAt).getTime() <= 24 * 60 * 60 * 1000);
   const recentVisits = visits.slice(-25).reverse();
@@ -1433,7 +1810,13 @@ app.get('/api/analytics/summary', requireAdminAuth, (req, res) => {
     totalVisits: visits.length,
     visitsLast24Hours: last24Hours.length,
     uniqueIpsLast24Hours: uniqueIps24h,
-    topBrowsers: summarizeCounts(last24Hours, 'browser'),
+    topBrowsers: summarizeCounts(
+      last24Hours.map((item) => ({
+        ...item,
+        browserLabel: String(item.browserName || item.browser || 'Desconhecido').trim() || 'Desconhecido',
+      })),
+      'browserLabel'
+    ),
     topOperatingSystems: summarizeCounts(last24Hours, 'operatingSystem'),
     topCountries: summarizeCounts(last24Hours, 'country'),
     topCities: summarizeCounts(last24Hours, 'city'),
@@ -1614,13 +1997,24 @@ app.get('*', (req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n🟢  ${getGeneralRuntimeConfig().channelName} rodando em http://localhost:${PORT}\n`);
-  console.log(`   Stream proxy : http://localhost:${PORT}/stream/playlist.m3u8`);
-  console.log(`   XMLTV proxy  : http://localhost:${PORT}/epg/xmltv.xml`);
-  console.log(`   Admin        : http://localhost:${PORT}/admin`);
-  console.log(`   Bloqueios    : http://localhost:${PORT}/bloqueios`);
-  console.log(`   EPG agora    : http://localhost:${PORT}/api/epg/now`);
-  console.log(`   Grade EPG    : http://localhost:${PORT}/api/epg/grid`);
-  console.log(`   Estatísticas : http://localhost:${PORT}/estatisticas\n`);
-});
+async function startServer() {
+  try {
+    await initializeVisitsDatabase();
+
+    app.listen(PORT, () => {
+      console.log(`\n🟢  ${getGeneralRuntimeConfig().channelName} rodando em http://localhost:${PORT}\n`);
+      console.log(`   Stream proxy : http://localhost:${PORT}/stream/playlist.m3u8`);
+      console.log(`   XMLTV proxy  : http://localhost:${PORT}/epg/xmltv.xml`);
+      console.log(`   Admin        : http://localhost:${PORT}/admin`);
+      console.log(`   Bloqueios    : http://localhost:${PORT}/bloqueios`);
+      console.log(`   EPG agora    : http://localhost:${PORT}/api/epg/now`);
+      console.log(`   Grade EPG    : http://localhost:${PORT}/api/epg/grid`);
+      console.log(`   Estatísticas : http://localhost:${PORT}/estatisticas\n`);
+    });
+  } catch (error) {
+    console.error('[STARTUP] Erro ao inicializar base de visitas:', error.message);
+    process.exit(1);
+  }
+}
+
+startServer();

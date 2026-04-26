@@ -110,7 +110,6 @@
         </table>
       </div>
     </section>
-  </main>
 
     <section class="panel-card table-panel">
       <div class="panel-head">
@@ -132,6 +131,17 @@
       </div>
     </section>
   </main>
+
+  <div class="visitor-modal-overlay" id="visitor-detail-overlay" hidden>
+    <div class="visitor-modal" role="dialog" aria-modal="true" aria-labelledby="visitor-detail-title">
+      <button class="visitor-modal-close" id="visitor-detail-close" type="button" aria-label="Fechar">×</button>
+      <div class="visitor-modal-head">
+        <p class="visitor-modal-kicker" id="visitor-detail-kicker">Detalhes da visita</p>
+        <h2 id="visitor-detail-title">Informacoes do visitante</h2>
+      </div>
+      <div class="visitor-modal-body" id="visitor-detail-body"></div>
+    </div>
+  </div>
 
   <script src="/stats.js"></script>
 </body>

@@ -298,9 +298,126 @@ td {
 }
 
 .watch-time-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.visit-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(244, 179, 56, 0.5);
+  background: rgba(244, 179, 56, 0.18);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.visit-info-btn:hover,
+.visit-info-btn:focus-visible {
+  outline: none;
+  background: rgba(244, 179, 56, 0.3);
+  border-color: rgba(244, 179, 56, 0.8);
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.visitor-modal-overlay[hidden] {
+  display: none !important;
+}
+
+.visitor-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 8, 14, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 300;
+}
+
+.visitor-modal {
+  width: min(760px, 100%);
+  max-height: min(760px, calc(100vh - 40px));
+  overflow: auto;
+  background: linear-gradient(180deg, rgba(17, 27, 40, 0.97), rgba(12, 20, 31, 0.97));
+  border: 1px solid rgba(136, 167, 203, 0.26);
+  border-radius: 18px;
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.45);
+  position: relative;
+  padding: 24px;
+}
+
+.visitor-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(136, 167, 203, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.visitor-modal-head {
+  margin-bottom: 18px;
+}
+
+.visitor-modal-kicker {
+  margin: 0 0 8px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.visitor-modal-head h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.visitor-modal-body {
+  display: grid;
+  gap: 10px;
+}
+
+.visitor-row {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(136, 167, 203, 0.16);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.visitor-label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.visitor-value {
+  word-break: break-word;
 }
 
 .prog-rank {
@@ -347,5 +464,9 @@ td {
 
   .pie-legend {
     width: 100%;
+  }
+
+  .visitor-row {
+    grid-template-columns: 1fr;
   }
 }

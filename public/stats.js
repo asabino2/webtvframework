@@ -13,7 +13,11 @@
   const topCountries = document.getElementById('top-countries');
   const topCities = document.getElementById('top-cities');
   const topReferrers = document.getElementById('top-referrers');
+  const visitorDetailOverlay = document.getElementById('visitor-detail-overlay');
+  const visitorDetailClose = document.getElementById('visitor-detail-close');
+  const visitorDetailBody = document.getElementById('visitor-detail-body');
   const PIE_COLORS = ['#f4b338', '#38d9a9', '#4dabf7', '#b197fc', '#ff8787', '#ffa94d', '#94d82d', '#66d9e8'];
+  let recentVisitsBySession = new Map();
 
   const LANG_KEY = 'webtv_lang';
   const i18n = {
@@ -54,6 +58,25 @@
       updatedAt: 'Atualizado as',
       updating: 'Atualizando...',
       thWatchTime: 'Tempo assistido',
+      visitDetails: 'Detalhes',
+      visitorKicker: 'Detalhes da visita',
+      visitorTitle: 'Informacoes do visitante',
+      visitorIp: 'IP',
+      visitorDates: 'Inicio / fim / duracao',
+      visitorBrowser: 'Navegador',
+      visitorSystem: 'Sistema operacional',
+      visitorDevice: 'Dispositivo',
+      visitorLocation: 'Localizacao',
+      visitorIsp: 'ISP',
+      visitorReferrer: 'Referrer',
+      visitorAccess: 'Acesso',
+      visitorProgram: 'Atracao assistida',
+      visitorUserAgent: 'User-agent',
+      visitorNotFinished: 'Em andamento',
+      visitorUnknown: 'Desconhecido',
+      accessHome: 'Pagina inicial',
+      accessEmbed: 'Embed',
+      accessHls: 'Stream HLS',
       panelTopPrograms: 'Programas mais vistos',
       panelTopProgramsSub: 'Top 5 atrações',
       thProgRank: '#',
@@ -99,6 +122,25 @@
       updatedAt: 'Updated at',
       updating: 'Updating...',
       thWatchTime: 'Watch time',
+      visitDetails: 'Details',
+      visitorKicker: 'Visit details',
+      visitorTitle: 'Visitor information',
+      visitorIp: 'IP',
+      visitorDates: 'Start / end / duration',
+      visitorBrowser: 'Browser',
+      visitorSystem: 'Operating system',
+      visitorDevice: 'Device',
+      visitorLocation: 'Location',
+      visitorIsp: 'ISP',
+      visitorReferrer: 'Referrer',
+      visitorAccess: 'Access',
+      visitorProgram: 'Watched program',
+      visitorUserAgent: 'User-agent',
+      visitorNotFinished: 'In progress',
+      visitorUnknown: 'Unknown',
+      accessHome: 'Home page',
+      accessEmbed: 'Embed',
+      accessHls: 'HLS stream',
       panelTopPrograms: 'Most watched programs',
       panelTopProgramsSub: 'Top 5 titles',
       thProgRank: '#',
@@ -161,6 +203,8 @@
     setText('th-location', t('thLocation'));
     setText('th-referrer', t('thReferrer'));
     setText('th-watch-time', t('thWatchTime'));
+    setText('visitor-detail-kicker', t('visitorKicker'));
+    setText('visitor-detail-title', t('visitorTitle'));
     setText('panel-top-programs-title', t('panelTopPrograms'));
     setText('panel-top-programs-subtitle', t('panelTopProgramsSub'));
     setText('th-prog-rank', t('thProgRank'));
@@ -260,11 +304,79 @@
     return remM ? `${h}h ${remM}m` : `${h}h`;
   }
 
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/'/g, '&#39;');
+  }
+
+  function fmtDateTime(iso) {
+    if (!iso) return t('visitorUnknown');
+    const dt = new Date(iso);
+    if (Number.isNaN(dt.getTime())) return t('visitorUnknown');
+    return dt.toLocaleString(locale());
+  }
+
+  function getAccessLabel(accessType) {
+    if (accessType === 'embed') return t('accessEmbed');
+    if (accessType === 'hls_stream') return t('accessHls');
+    return t('accessHome');
+  }
+
+  function closeVisitorDetail() {
+    if (!visitorDetailOverlay) return;
+    visitorDetailOverlay.hidden = true;
+    visitorDetailOverlay.style.display = 'none';
+    visitorDetailOverlay.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+  }
+
+  function openVisitorDetail(sessionId) {
+    const visit = recentVisitsBySession.get(String(sessionId || ''));
+    if (!visit || !visitorDetailOverlay || !visitorDetailBody) return;
+
+    const start = fmtDateTime(visit.startedAt || visit.visitedAt);
+    const end = visit.endedAt ? fmtDateTime(visit.endedAt) : t('visitorNotFinished');
+    const duration = fmtWatchTime(visit.watchTimeSecs);
+    const neighborhood = visit.neighborhood || t('visitorUnknown');
+    const city = visit.city || t('visitorUnknown');
+    const state = visit.state || t('visitorUnknown');
+    const country = visit.country || t('visitorUnknown');
+    const fullLocation = `${neighborhood}, ${city}, ${state}, ${country}`;
+
+    const rows = [
+      [t('visitorIp'), visit.ip || t('visitorUnknown')],
+      [t('visitorDates'), `${start} / ${end} / ${duration}`],
+      [t('visitorBrowser'), visit.browser || t('visitorUnknown')],
+      [t('visitorSystem'), visit.operatingSystem || t('visitorUnknown')],
+      [t('visitorDevice'), visit.device || t('visitorUnknown')],
+      [t('visitorLocation'), fullLocation],
+      [t('visitorIsp'), visit.isp || t('visitorUnknown')],
+      [t('visitorReferrer'), visit.referrer || t('directAccess')],
+      [t('visitorAccess'), getAccessLabel(visit.accessType)],
+      [t('visitorProgram'), visit.currentProgram || t('visitorUnknown')],
+      [t('visitorUserAgent'), visit.userAgent || t('visitorUnknown')],
+    ];
+
+    visitorDetailBody.innerHTML = rows.map(([label, value]) => `
+      <div class="visitor-row">
+        <span class="visitor-label">${escapeHtml(label)}</span>
+        <span class="visitor-value">${escapeHtml(value)}</span>
+      </div>
+    `).join('');
+
+    visitorDetailOverlay.hidden = false;
+    visitorDetailOverlay.style.display = 'flex';
+    visitorDetailOverlay.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+  }
+
   function renderRecentVisits(items) {
     if (!items || !items.length) {
-      recentVisits.innerHTML = `<tr><td colspan="7" class="empty-state">${t('emptyVisits')}</td></tr>`;
+      recentVisits.innerHTML = `<tr><td colspan="8" class="empty-state">${t('emptyVisits')}</td></tr>`;
+      recentVisitsBySession = new Map();
       return;
     }
+
+    recentVisitsBySession = new Map((items || []).map((item) => [String(item.sessionId || ''), item]));
 
     recentVisits.innerHTML = items.map(item => `
       <tr>
@@ -275,9 +387,18 @@
         <td>${escapeHtml(item.device)}</td>
         <td>${escapeHtml(`${item.city}, ${item.state}, ${item.country}`)}</td>
         <td>${escapeHtml(item.referrer || t('directAccess'))}</td>
-        <td class="watch-time-cell">${fmtWatchTime(item.watchTimeSecs)}</td>
+        <td class="watch-time-cell">
+          <span>${fmtWatchTime(item.watchTimeSecs)}</span>
+          <button class="visit-info-btn" type="button" data-session-id="${escapeAttr(item.sessionId)}" aria-label="${escapeAttr(t('visitDetails'))}" title="${escapeAttr(t('visitDetails'))}">i</button>
+        </td>
       </tr>
     `).join('');
+
+    recentVisits.querySelectorAll('.visit-info-btn').forEach((button) => {
+      button.addEventListener('click', () => {
+        openVisitorDetail(button.dataset.sessionId);
+      });
+    });
   }
 
   function renderTopPrograms(items) {
@@ -327,6 +448,22 @@
 
   applyStaticTranslations();
   applyChannelName();
+  closeVisitorDetail();
+  if (visitorDetailClose) {
+    visitorDetailClose.addEventListener('click', closeVisitorDetail);
+  }
+  if (visitorDetailOverlay) {
+    visitorDetailOverlay.addEventListener('click', (event) => {
+      if (event.target === visitorDetailOverlay) {
+        closeVisitorDetail();
+      }
+    });
+  }
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeVisitorDetail();
+    }
+  });
   loadSummary().catch(console.error);
   setInterval(() => loadSummary().catch(console.error), 10000);
 })();
