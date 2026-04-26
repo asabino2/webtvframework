@@ -1134,7 +1134,33 @@ async function buildVisitEntry(req, sessionId, overrides = {}) {
   };
 }
 
+function shouldTrackDirectStreamVisit(req) {
+  const rawReferrer = String(req.headers.referer || '').trim();
+  if (!rawReferrer) {
+    return true;
+  }
+
+  try {
+    const refUrl = new URL(rawReferrer);
+    const reqHost = String(req.get('host') || '').trim().toLowerCase();
+    const refHost = String(refUrl.host || '').trim().toLowerCase();
+
+    // Requisição iniciada por uma página desta própria aplicação (home/embed).
+    if (reqHost && refHost && reqHost === refHost) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 async function trackDirectStreamVisit(req) {
+  if (!shouldTrackDirectStreamVisit(req)) {
+    return;
+  }
+
   const ip = getClientIp(req);
   const userAgent = String(req.headers['user-agent'] || '');
   const key = `${ip}|${userAgent}`;
