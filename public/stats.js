@@ -50,6 +50,7 @@
       thSystem: 'Sistema',
       thDevice: 'Dispositivo',
       thLocation: 'Localizacao',
+      thAccess: 'Acesso',
       thReferrer: 'Referrer',
       panelReferrers: 'Referrer',
       panelReferrersSub: 'Sites de origem',
@@ -72,10 +73,14 @@
       visitorIsp: 'ISP',
       visitorReferrer: 'Referrer',
       visitorAccess: 'Acesso',
+      visitorVpn: 'VPN',
       visitorProgram: 'Atracao assistida',
       visitorUserAgent: 'User-agent',
       visitorNotFinished: 'Em andamento',
       visitorUnknown: 'Desconhecido',
+      visitorVpnOff: 'Nao',
+      visitorVpnOn: 'Sim',
+      visitorVpnOnUnknown: 'Sim (Nao identificado)',
       accessHome: 'Pagina inicial',
       accessEmbed: 'Embed',
       accessHls: 'Stream HLS',
@@ -115,6 +120,7 @@
       thSystem: 'System',
       thDevice: 'Device',
       thLocation: 'Location',
+      thAccess: 'Access',
       thReferrer: 'Referrer',
       panelReferrers: 'Referrer',
       panelReferrersSub: 'Source sites',
@@ -137,10 +143,14 @@
       visitorIsp: 'ISP',
       visitorReferrer: 'Referrer',
       visitorAccess: 'Access',
+      visitorVpn: 'VPN',
       visitorProgram: 'Watched program',
       visitorUserAgent: 'User-agent',
       visitorNotFinished: 'In progress',
       visitorUnknown: 'Unknown',
+      visitorVpnOff: 'No',
+      visitorVpnOn: 'Yes',
+      visitorVpnOnUnknown: 'Yes (Unknown provider)',
       accessHome: 'Home page',
       accessEmbed: 'Embed',
       accessHls: 'HLS stream',
@@ -206,6 +216,7 @@
     setText('th-system', t('thSystem'));
     setText('th-device', t('thDevice'));
     setText('th-location', t('thLocation'));
+    setText('th-access', t('thAccess'));
     setText('th-referrer', t('thReferrer'));
     setText('th-watch-time', t('thWatchTime'));
     setText('visitor-detail-kicker', t('visitorKicker'));
@@ -326,6 +337,13 @@
     return t('accessHome');
   }
 
+  function getVpnLabel(visit) {
+    if (!visit?.vpnDetected) return t('visitorVpnOff');
+    const provider = String(visit.vpnProvider || '').trim();
+    if (!provider) return t('visitorVpnOnUnknown');
+    return `${t('visitorVpnOn')} (${provider})`;
+  }
+
   function closeVisitorDetail() {
     if (!visitorDetailOverlay) return;
     visitorDetailOverlay.hidden = true;
@@ -357,6 +375,7 @@
       [t('visitorIsp'), visit.isp || t('visitorUnknown')],
       [t('visitorReferrer'), visit.referrer || t('directAccess')],
       [t('visitorAccess'), getAccessLabel(visit.accessType)],
+      [t('visitorVpn'), getVpnLabel(visit)],
       [t('visitorProgram'), visit.currentProgram || t('visitorUnknown')],
       [t('visitorUserAgent'), visit.userAgent || t('visitorUnknown')],
     ];
@@ -376,7 +395,7 @@
 
   function renderRecentVisits(items) {
     if (!items || !items.length) {
-      recentVisits.innerHTML = `<tr><td colspan="8" class="empty-state">${t('emptyVisits')}</td></tr>`;
+      recentVisits.innerHTML = `<tr><td colspan="9" class="empty-state">${t('emptyVisits')}</td></tr>`;
       recentVisitsBySession = new Map();
       return;
     }
@@ -391,6 +410,7 @@
         <td>${escapeHtml(item.operatingSystem)}</td>
         <td>${escapeHtml(item.device)}</td>
         <td>${escapeHtml(`${item.city}, ${item.state}, ${item.country}`)}</td>
+        <td>${escapeHtml(getAccessLabel(item.accessType))}</td>
         <td>${escapeHtml(item.referrer || t('directAccess'))}</td>
         <td class="watch-time-cell">
           <span>${fmtWatchTime(item.watchTimeSecs)}</span>

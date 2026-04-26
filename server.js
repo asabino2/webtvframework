@@ -231,6 +231,9 @@ function normalizeVisitForStorage(entry) {
   const operatingSystemVersion = String(entry?.operatingSystemVersion || '').trim();
   const page = String(entry?.page || '/').trim() || '/';
   const accessType = String(entry?.accessType || classifyAccessType(page)).trim() || 'home';
+  const vpnDetected = entry?.vpnDetected === true || entry?.vpnDetected === 1 || entry?.vpnDetected === '1' || entry?.isVpn === true;
+  const vpnProviderRaw = String(entry?.vpnProvider || entry?.vpnName || '').trim();
+  const vpnProvider = vpnDetected ? (vpnProviderRaw || 'Não identificado') : null;
 
   return {
     sessionId,
@@ -240,6 +243,8 @@ function normalizeVisitForStorage(entry) {
     ip: String(entry?.ip || '0.0.0.0').trim() || '0.0.0.0',
     page,
     accessType,
+    vpnDetected,
+    vpnProvider,
     referrer: String(entry?.referrer || '').trim(),
     currentProgram: entry?.currentProgram ? String(entry.currentProgram).trim() : null,
     browserName,
@@ -272,6 +277,8 @@ function mapVisitRowToApi(row) {
     ip: row.ip,
     page: row.page,
     accessType: row.access_type,
+    vpnDetected: Boolean(row.vpn_detected),
+    vpnProvider: row.vpn_provider || null,
     referrer: row.referrer,
     currentProgram: row.current_program,
     browser,
@@ -294,10 +301,10 @@ async function upsertVisit(entry) {
   const visit = normalizeVisitForStorage(entry);
   await runSql(
     `INSERT INTO visits (
-      session_id, started_at, ended_at, watch_time_secs, ip, page, access_type, referrer, current_program,
+      session_id, started_at, ended_at, watch_time_secs, ip, page, access_type, vpn_detected, vpn_provider, referrer, current_program,
       browser_name, browser_version, operating_system_name, operating_system_version, device,
       country, state, city, neighborhood, isp, user_agent
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(session_id) DO UPDATE SET
       started_at = excluded.started_at,
       ended_at = excluded.ended_at,
@@ -305,6 +312,8 @@ async function upsertVisit(entry) {
       ip = excluded.ip,
       page = excluded.page,
       access_type = excluded.access_type,
+      vpn_detected = excluded.vpn_detected,
+      vpn_provider = excluded.vpn_provider,
       referrer = excluded.referrer,
       current_program = excluded.current_program,
       browser_name = excluded.browser_name,
@@ -326,6 +335,8 @@ async function upsertVisit(entry) {
       visit.ip,
       visit.page,
       visit.accessType,
+      visit.vpnDetected ? 1 : 0,
+      visit.vpnProvider,
       visit.referrer,
       visit.currentProgram,
       visit.browserName,
@@ -357,6 +368,8 @@ async function initializeVisitsDatabase() {
     ip TEXT NOT NULL,
     page TEXT NOT NULL,
     access_type TEXT NOT NULL,
+    vpn_detected INTEGER NOT NULL DEFAULT 0,
+    vpn_provider TEXT,
     referrer TEXT,
     current_program TEXT,
     browser_name TEXT,
@@ -375,6 +388,18 @@ async function initializeVisitsDatabase() {
   await runSql('CREATE INDEX IF NOT EXISTS idx_visits_started_at ON visits(started_at)');
   await runSql('CREATE INDEX IF NOT EXISTS idx_visits_ip ON visits(ip)');
   await runSql('CREATE INDEX IF NOT EXISTS idx_visits_access_type ON visits(access_type)');
+
+  const visitsColumns = await allSql('PRAGMA table_info(visits)');
+  const hasVpnDetected = visitsColumns.some((column) => column.name === 'vpn_detected');
+  const hasVpnProvider = visitsColumns.some((column) => column.name === 'vpn_provider');
+
+  if (!hasVpnDetected) {
+    await runSql('ALTER TABLE visits ADD COLUMN vpn_detected INTEGER NOT NULL DEFAULT 0');
+  }
+
+  if (!hasVpnProvider) {
+    await runSql('ALTER TABLE visits ADD COLUMN vpn_provider TEXT');
+  }
 
   if (fs.existsSync(VISITS_FILE)) {
     let legacyVisits = [];
@@ -712,6 +737,8 @@ async function getLocationProfile(ip) {
       city: 'Rede interna',
       neighborhood: 'Rede interna',
       isp: 'Rede interna',
+      vpnDetected: false,
+      vpnProvider: null,
     };
   }
 
@@ -728,10 +755,12 @@ async function getLocationProfile(ip) {
     city: fallback.city,
     neighborhood: 'Desconhecido',
     isp: 'Desconhecido',
+    vpnDetected: false,
+    vpnProvider: null,
   };
 
   try {
-    const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,regionName,city,district,isp`;
+    const url = `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,regionName,city,district,isp,org,as,proxy,hosting,mobile`;
     const response = await axios.get(url, { timeout: 2500 });
     const data = response.data || {};
 
@@ -740,12 +769,19 @@ async function getLocationProfile(ip) {
       return fallbackProfile;
     }
 
+    const vpnDetected = Boolean(data.proxy || data.hosting);
+    const vpnProvider = vpnDetected
+      ? String(data.org || data.as || data.isp || '').trim() || 'Não identificado'
+      : null;
+
     const profile = {
       country: String(data.country || fallbackProfile.country || 'Desconhecido'),
       state: String(data.regionName || fallbackProfile.state || 'Desconhecido'),
       city: String(data.city || fallbackProfile.city || 'Desconhecido'),
       neighborhood: String(data.district || 'Desconhecido'),
       isp: String(data.isp || 'Desconhecido'),
+      vpnDetected,
+      vpnProvider,
     };
     geoProfileCache.set(ip, { value: profile, savedAt: now });
     return profile;
@@ -1088,6 +1124,8 @@ async function buildVisitEntry(req, sessionId, overrides = {}) {
     city: location.city,
     neighborhood: location.neighborhood,
     isp: location.isp,
+    vpnDetected: Boolean(location.vpnDetected),
+    vpnProvider: location.vpnProvider || null,
     page,
     accessType,
     referrer,

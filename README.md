@@ -2,12 +2,12 @@
 
 Interface web para streaming ao vivo com EPG, analytics, embed e painel administrativo.
 
-[![Version](https://img.shields.io/badge/version-1.1.7-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
+[![Version](https://img.shields.io/badge/version-1.1.8-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 [![Node.js](https://img.shields.io/badge/node.js-18%2B-339933?logo=nodedotjs&logoColor=white&style=for-the-badge)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/status-active-2ea44f?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 
-Versão atual: **1.1.7**
+Versão atual: **1.1.8**
 
 ## 📺 Visão geral
 
@@ -137,6 +137,13 @@ webtvframework/
 - Personalização de tema, fonte, cores e controles do player
 
 ## 📝 Changelog recente
+
+### 1.1.8
+
+- Inclusão de detecção de VPN nas visitas com persistência dos campos de status e provedor no SQLite
+- Migração automática do schema para adicionar os campos de VPN em bancos já existentes
+- Exibição do tipo de acesso (página inicial, embed ou stream HLS) na tabela de visitas recentes
+- Exibição de VPN (status e provedor) apenas no popup/modal de detalhes da visita
 
 ### 1.1.7
 
