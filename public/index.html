@@ -3,8 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Webtv framework — Ao Vivo</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon-default.svg" />
+  <title>{{SOCIAL_TITLE}}</title>
+  <meta name="description" content="{{SOCIAL_DESCRIPTION}}" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="{{SOCIAL_TITLE}}" />
+  <meta property="og:description" content="{{SOCIAL_DESCRIPTION}}" />
+  <meta property="og:url" content="{{SOCIAL_URL}}" />
+  <meta property="og:image" content="{{SOCIAL_IMAGE}}" />
+  <meta property="og:site_name" content="{{CHANNEL_NAME}}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{{SOCIAL_TITLE}}" />
+  <meta name="twitter:description" content="{{SOCIAL_DESCRIPTION}}" />
+  <meta name="twitter:image" content="{{SOCIAL_IMAGE}}" />
+  <link rel="icon" type="image/svg+xml" href="{{FAVICON_URL}}" />
   <link rel="stylesheet" href="/style.css" />
   <!-- HLS.js -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
@@ -111,6 +122,32 @@
             <line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
           <p id="error-msg">Sinal indisponível no momento.</p>
           <button class="btn-retry" id="btn-retry">Tentar novamente</button>
+        </div>
+      </div>
+
+      <div class="share-section" id="share-section" style="display:none">
+        <p class="share-title" id="share-title">Compartilhar transmissao</p>
+        <div class="share-actions">
+          <a class="share-btn" id="share-whatsapp" href="#" target="_blank" rel="noopener">
+            <svg class="share-btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.05 4.94A9.9 9.9 0 0 0 12 2a9.94 9.94 0 0 0-8.6 14.93L2 22l5.2-1.36A9.94 9.94 0 0 0 12 22h.01A9.99 9.99 0 0 0 22 12a9.9 9.9 0 0 0-2.95-7.06M12 20.1h-.01a8.26 8.26 0 0 1-4.2-1.15l-.3-.18-3.09.81.82-3.01-.2-.31a8.26 8.26 0 1 1 6.98 3.84m4.53-6.17c-.25-.13-1.47-.73-1.7-.82-.23-.08-.4-.12-.57.13-.17.26-.65.82-.8.98-.15.17-.29.19-.54.07-.25-.13-1.05-.39-2-1.25-.74-.66-1.24-1.48-1.39-1.73-.15-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.13-.14.17-.25.25-.42.08-.17.04-.32-.02-.45-.07-.13-.57-1.37-.78-1.88-.2-.49-.41-.42-.57-.43h-.48c-.17 0-.45.06-.69.32-.24.26-.91.89-.91 2.17s.93 2.52 1.06 2.69c.13.17 1.82 2.78 4.41 3.9.62.27 1.11.43 1.49.55.63.2 1.2.17 1.65.1.5-.08 1.47-.6 1.68-1.18.21-.59.21-1.09.15-1.18-.06-.1-.23-.16-.48-.29"/></svg>
+            <span class="share-btn-label">WhatsApp</span>
+          </a>
+          <a class="share-btn" id="share-facebook" href="#" target="_blank" rel="noopener">
+            <svg class="share-btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 6.03 4.39 11.03 10.13 11.93v-8.44H7.08v-3.5h3.05V9.4c0-3.03 1.79-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.95.93-1.95 1.88v2.27h3.33l-.53 3.5h-2.8V24C19.61 23.1 24 18.1 24 12.07"/></svg>
+            <span class="share-btn-label">Facebook</span>
+          </a>
+          <a class="share-btn" id="share-x" href="#" target="_blank" rel="noopener">
+            <svg class="share-btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 2H22l-6.77 7.74L23.2 22h-6.24l-4.89-6.89L6.04 22H2.93l7.24-8.27L.8 2h6.4l4.42 6.23zm-1.1 18h1.72L6.27 3.9H4.43z"/></svg>
+            <span class="share-btn-label">X</span>
+          </a>
+          <a class="share-btn" id="share-telegram" href="#" target="_blank" rel="noopener">
+            <svg class="share-btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.78 18.65 9.96 15l6.64-6c.29-.26-.06-.4-.45-.14l-8.2 5.17-3.54-1.1c-.77-.24-.79-.77.16-1.14L18.4 6.46c.64-.24 1.2.16.99 1.14l-2.35 11.08c-.17.79-.66.98-1.33.61l-3.68-2.72-1.78 1.72c-.2.2-.37.37-.75.37-.5 0-.72-.18-.72-.01"/></svg>
+            <span class="share-btn-label">Telegram</span>
+          </a>
+          <button class="share-btn share-copy" id="share-copy-link" type="button">
+            <svg class="share-btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m0 16H8V7h11z"/></svg>
+            <span class="share-btn-label">Copiar link</span>
+          </button>
         </div>
       </div>
     </section>

@@ -17,7 +17,7 @@
   const epgClose = document.getElementById('embed-epg-close');
   const epgDetail = document.getElementById('embed-epg-detail');
 
-  const WIDGET_IDS = ['epgButton', 'currentProgram', 'nextProgram', 'currentAudience', 'totalAudience'];
+  const WIDGET_IDS = ['epgButton', 'currentProgram', 'nextProgram', 'currentAudience', 'totalAudience', 'shareOptions'];
   const DEFAULT_EMBED_CUSTOMIZATION = {
     order: [...WIDGET_IDS],
     enabled: {
@@ -26,6 +26,7 @@
       nextProgram: true,
       currentAudience: true,
       totalAudience: false,
+      shareOptions: true,
     },
   };
 
@@ -119,6 +120,20 @@
     })}`;
   }
 
+  function getSharePayload() {
+    const shareUrl = new URL('/', window.location.origin).toString();
+    const shareText = 'Assista a transmissao ao vivo';
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedText = encodeURIComponent(shareText);
+    return {
+      shareUrl,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      x: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+    };
+  }
+
   function renderWidgets() {
     const enabledOrder = embedCustomization.order.filter((id) => isWidgetEnabled(id));
 
@@ -148,6 +163,11 @@
         return `<div class="widget-card"><div class="widget-title">Audiencia total</div><div class="widget-value" id="widget-total-views">0</div><div class="widget-meta" id="widget-total-updated">Aguardando atualizacao...</div></div>`;
       }
 
+      if (id === 'shareOptions') {
+        const payload = getSharePayload();
+        return `<div class="widget-card"><div class="widget-title">Compartilhar transmissao</div><div class="widget-share-actions"><a class="widget-share-btn" href="${payload.whatsapp}" target="_blank" rel="noopener">WhatsApp</a><a class="widget-share-btn" href="${payload.facebook}" target="_blank" rel="noopener">Facebook</a><a class="widget-share-btn" href="${payload.x}" target="_blank" rel="noopener">X</a><a class="widget-share-btn" href="${payload.telegram}" target="_blank" rel="noopener">Telegram</a><button class="widget-share-btn" id="widget-copy-share" type="button">Copiar link</button></div></div>`;
+      }
+
       return '';
     }).join('');
 
@@ -156,6 +176,25 @@
     const openEpgButton = document.getElementById('widget-open-epg');
     if (openEpgButton && epgEnabled) {
       openEpgButton.addEventListener('click', openEpgModal);
+    }
+
+    const copyButton = document.getElementById('widget-copy-share');
+    if (copyButton) {
+      copyButton.addEventListener('click', async () => {
+        const payload = getSharePayload();
+        try {
+          await navigator.clipboard.writeText(payload.shareUrl);
+          copyButton.textContent = 'Copiado!';
+          setTimeout(() => {
+            copyButton.textContent = 'Copiar link';
+          }, 1200);
+        } catch (_) {
+          copyButton.textContent = 'Falha ao copiar';
+          setTimeout(() => {
+            copyButton.textContent = 'Copiar link';
+          }, 1200);
+        }
+      });
     }
   }
 

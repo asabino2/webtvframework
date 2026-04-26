@@ -17,6 +17,7 @@
     { id: 'nextProgram', label: 'Proximo programa' },
     { id: 'currentAudience', label: 'Audiencia atual' },
     { id: 'totalAudience', label: 'Audiencia total' },
+    { id: 'shareOptions', label: 'Opcoes de compartilhamento' },
   ];
 
   let embedCustomization = {
@@ -27,6 +28,7 @@
       nextProgram: true,
       currentAudience: true,
       totalAudience: false,
+      shareOptions: true,
     },
   };
   let dragId = null;

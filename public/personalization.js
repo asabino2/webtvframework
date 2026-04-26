@@ -28,6 +28,7 @@
       fullscreen: 'Tela cheia',
       volume: 'Barra de volume',
       mute: 'Botao mudo',
+      shareButtons: 'Compartilhamento abaixo do player',
       save: 'Salvar personalizacao',
       saveSuccess: 'Personalizacao salva. Reiniciando a aplicacao...',
       saveError: 'Nao foi possivel salvar a personalizacao.',
@@ -53,6 +54,7 @@
       fullscreen: 'Fullscreen',
       volume: 'Volume bar',
       mute: 'Mute button',
+      shareButtons: 'Share options below player',
       save: 'Save personalization',
       saveSuccess: 'Personalization saved. Restarting application...',
       saveError: 'Could not save personalization.',
@@ -129,6 +131,7 @@
     setText('label-control-fullscreen', t('fullscreen'));
     setText('label-control-volume', t('volume'));
     setText('label-control-mute', t('mute'));
+    setText('label-control-share-buttons', t('shareButtons'));
     setText('btn-save-personalization', t('save'));
   }
 
@@ -193,6 +196,7 @@
     form.fullscreen.checked = customization.playerControls?.fullscreen !== false;
     form.volume.checked = customization.playerControls?.volume !== false;
     form.mute.checked = customization.playerControls?.mute !== false;
+    form.shareButtons.checked = customization.playerControls?.shareButtons !== false;
 
     emitPreviewToAdmin();
   }
@@ -248,6 +252,7 @@
           fullscreen: form.fullscreen.checked,
           volume: form.volume.checked,
           mute: form.mute.checked,
+          shareButtons: form.shareButtons.checked,
         },
       },
     };

@@ -2,12 +2,12 @@
 
 Interface web para streaming ao vivo com EPG, analytics, embed e painel administrativo.
 
-[![Version](https://img.shields.io/badge/version-1.1.5-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
+[![Version](https://img.shields.io/badge/version-1.1.6-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 [![Node.js](https://img.shields.io/badge/node.js-18%2B-339933?logo=nodedotjs&logoColor=white&style=for-the-badge)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/status-active-2ea44f?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 
-Versão atual: **1.1.5**
+Versão atual: **1.1.6**
 
 ## 📺 Visão geral
 
@@ -137,6 +137,15 @@ webtvframework/
 - Personalização de tema, fonte, cores e controles do player
 
 ## 📝 Changelog recente
+
+### 1.1.6
+
+- Inclusão de ISPs na página de estatísticas com distribuição percentual
+- Opções de compartilhamento adicionadas abaixo do player na página inicial
+- Novo controle no painel de personalização para exibir ou ocultar o bloco de compartilhamento na home
+- Opções de compartilhamento adicionadas também ao embed via widget configurável
+- Links de compartilhamento com ícones visuais e texto de postagem mais amigável para redes sociais
+- Geração de metadados sociais dinâmicos na home com nome do canal, link da transmissão e ícone do canal para melhorar previews de compartilhamento
 
 ### 1.1.5
 

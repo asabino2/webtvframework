@@ -26,6 +26,18 @@
   const logoIconFallback = document.getElementById('logo-icon-fallback');
   const appVersionLine = document.getElementById('app-version-line');
   const appAuthorLine = document.getElementById('app-author-line');
+  const shareSection = document.getElementById('share-section');
+  const shareTitle = document.getElementById('share-title');
+  const shareWhatsapp = document.getElementById('share-whatsapp');
+  const shareFacebook = document.getElementById('share-facebook');
+  const shareX = document.getElementById('share-x');
+  const shareTelegram = document.getElementById('share-telegram');
+  const shareCopyLink = document.getElementById('share-copy-link');
+  const shareWhatsappLabel = shareWhatsapp?.querySelector('.share-btn-label');
+  const shareFacebookLabel = shareFacebook?.querySelector('.share-btn-label');
+  const shareXLabel = shareX?.querySelector('.share-btn-label');
+  const shareTelegramLabel = shareTelegram?.querySelector('.share-btn-label');
+  const shareCopyLinkLabel = shareCopyLink?.querySelector('.share-btn-label');
 
   const btnEpg        = document.getElementById('btn-epg');
   const epgOverlay    = document.getElementById('epg-overlay');
@@ -111,7 +123,17 @@
       streamNativeError: 'Nao foi possivel reproduzir o stream.',
       hlsUnsupported: 'Seu navegador nao suporta reproducao HLS.',
       liveSubtitleFallback: 'Transmissao ao vivo',
-      streamNoticeFallback: 'Transmissao indisponivel no momento.'
+      streamNoticeFallback: 'Transmissao indisponivel no momento.',
+      shareTitle: 'Compartilhar transmissao',
+      shareWhatsapp: 'WhatsApp',
+      shareFacebook: 'Facebook',
+      shareX: 'X',
+      shareTelegram: 'Telegram',
+      shareCopy: 'Copiar link',
+      shareCopySuccess: 'Link copiado!',
+      shareCopyError: 'Nao foi possivel copiar o link.',
+      shareInvite: 'Confira',
+      shareInviteSuffix: 'na transmissao ao vivo!'
     },
     en: {
       live: 'LIVE',
@@ -165,7 +187,17 @@
       streamNativeError: 'Could not play the stream.',
       hlsUnsupported: 'Your browser does not support HLS playback.',
       liveSubtitleFallback: 'Live broadcast',
-      streamNoticeFallback: 'Broadcast unavailable at the moment.'
+      streamNoticeFallback: 'Broadcast unavailable at the moment.',
+      shareTitle: 'Share broadcast',
+      shareWhatsapp: 'WhatsApp',
+      shareFacebook: 'Facebook',
+      shareX: 'X',
+      shareTelegram: 'Telegram',
+      shareCopy: 'Copy link',
+      shareCopySuccess: 'Link copied!',
+      shareCopyError: 'Could not copy the link.',
+      shareInvite: 'Check out',
+      shareInviteSuffix: 'live on air!'
     }
   };
 
@@ -227,9 +259,74 @@
     return homeCustomization?.playerControls?.googleCast !== false;
   }
 
+  function isShareEnabled() {
+    return homeCustomization?.playerControls?.shareButtons !== false;
+  }
+
   function updateCastButtonVisibility() {
     if (!btnCast) return;
     setDisplay(btnCast, (isCastEnabled() && castApiAvailable) ? 'flex' : 'none');
+  }
+
+  function buildShareUrl() {
+    return new URL('/', window.location.origin).toString();
+  }
+
+  function buildShareMessage() {
+    return `${t('shareInvite')} ${channelName} ${t('shareInviteSuffix')}`;
+  }
+
+  function buildSharePostText() {
+    return `${buildShareMessage()}\n${buildShareUrl()}`;
+  }
+
+  function setOrCreateMeta(selector, attributes) {
+    let element = document.head.querySelector(selector);
+    if (!element) {
+      element = document.createElement('meta');
+      document.head.appendChild(element);
+    }
+
+    Object.entries(attributes).forEach(([key, value]) => {
+      element.setAttribute(key, value);
+    });
+  }
+
+  function updateSocialMeta() {
+    const shareUrl = buildShareUrl();
+    const absoluteFaviconUrl = faviconUrl ? new URL(faviconUrl, window.location.origin).toString() : new URL('/favicon-default.svg', window.location.origin).toString();
+    const socialTitle = `${channelName} - ${t('titleLive')}`;
+    const socialDescription = buildShareMessage();
+
+    document.title = socialTitle;
+    setOrCreateMeta('meta[name="description"]', { name: 'description', content: socialDescription });
+    setOrCreateMeta('meta[property="og:title"]', { property: 'og:title', content: socialTitle });
+    setOrCreateMeta('meta[property="og:description"]', { property: 'og:description', content: socialDescription });
+    setOrCreateMeta('meta[property="og:url"]', { property: 'og:url', content: shareUrl });
+    setOrCreateMeta('meta[property="og:image"]', { property: 'og:image', content: absoluteFaviconUrl });
+    setOrCreateMeta('meta[property="og:site_name"]', { property: 'og:site_name', content: channelName });
+    setOrCreateMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: socialTitle });
+    setOrCreateMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: socialDescription });
+    setOrCreateMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: absoluteFaviconUrl });
+  }
+
+  function updateShareLinks() {
+    const shareUrl = buildShareUrl();
+    const shareText = buildShareMessage();
+    const sharePostText = buildSharePostText();
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedText = encodeURIComponent(shareText);
+
+    if (shareWhatsapp) shareWhatsapp.href = `https://wa.me/?text=${encodeURIComponent(sharePostText)}`;
+    if (shareFacebook) shareFacebook.href = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+    if (shareX) shareX.href = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+    if (shareTelegram) shareTelegram.href = `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`;
+    updateSocialMeta();
+  }
+
+  function updateShareVisibility() {
+    if (!shareSection) return;
+    setDisplay(shareSection, isShareEnabled() ? 'block' : 'none');
   }
 
   function isVisible(element) {
@@ -422,6 +519,7 @@
     setDisplay(volRange, isVolumeEnabled() ? 'block' : 'none');
     setDisplay(btnFS, isFullscreenEnabled() ? 'flex' : 'none');
     updateCastButtonVisibility();
+    updateShareVisibility();
   }
 
   function applyHomeCustomization(config) {
@@ -534,6 +632,13 @@
       appVersionLine.textContent = `Webtv Framework - ${currentLang === 'en' ? 'Version' : 'Versao'} ${appVersion}`;
     }
 
+    if (shareTitle) shareTitle.textContent = t('shareTitle');
+    if (shareWhatsappLabel) shareWhatsappLabel.textContent = t('shareWhatsapp');
+    if (shareFacebookLabel) shareFacebookLabel.textContent = t('shareFacebook');
+    if (shareXLabel) shareXLabel.textContent = t('shareX');
+    if (shareTelegramLabel) shareTelegramLabel.textContent = t('shareTelegram');
+    if (shareCopyLinkLabel) shareCopyLinkLabel.textContent = t('shareCopy');
+
     const detailClose = byId('epg-detail-close');
     if (detailClose) detailClose.title = t('close');
 
@@ -544,6 +649,8 @@
     if (btnCast) btnCast.title = t('cast');
 
     updateDocumentTitle();
+    updateShareLinks();
+    updateShareVisibility();
   }
 
   async function loadPublicConfig(options = {}) {
@@ -574,6 +681,7 @@
       applyFavicon(faviconUrl);
       applyBrandIcon(faviconUrl);
       applyEpgVisibility();
+      updateShareLinks();
 
       return data;
     } catch (_) {
@@ -773,6 +881,18 @@
 
   btnRetry.addEventListener('click', initPlayer);
   document.addEventListener('keydown', handleRemoteKey);
+
+  if (shareCopyLink) {
+    shareCopyLink.addEventListener('click', async () => {
+      const shareUrl = buildShareUrl();
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        window.alert(t('shareCopySuccess'));
+      } catch (_) {
+        window.alert(t('shareCopyError'));
+      }
+    });
+  }
 
   // ── Google Cast ─────────────────────────────────────────────────────────
   window.__onGCastApiAvailable = function onGCastApiAvailable(isAvailable) {

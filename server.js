@@ -94,6 +94,7 @@ const DEFAULT_HOME_CUSTOMIZATION = {
     fullscreen: true,
     volume: true,
     mute: true,
+    shareButtons: true,
   },
   faviconUrl: '',
   backgroundImageUrl: '',
@@ -104,6 +105,7 @@ const EMBED_WIDGET_IDS = [
   'nextProgram',
   'currentAudience',
   'totalAudience',
+  'shareOptions',
 ];
 const DEFAULT_EMBED_CUSTOMIZATION = {
   order: [...EMBED_WIDGET_IDS],
@@ -113,6 +115,7 @@ const DEFAULT_EMBED_CUSTOMIZATION = {
     nextProgram: true,
     currentAudience: true,
     totalAudience: false,
+    shareOptions: true,
   },
 };
 
@@ -457,6 +460,7 @@ function sanitizeHomeCustomization(value, fallback = DEFAULT_HOME_CUSTOMIZATION)
       fullscreen: source.playerControls?.fullscreen !== false,
       volume: source.playerControls?.volume !== false,
       mute: source.playerControls?.mute !== false,
+      shareButtons: source.playerControls?.shareButtons !== false,
     },
     faviconUrl: sanitizeOptionalUrl(source.faviconUrl),
     backgroundImageUrl: sanitizeOptionalUrl(source.backgroundImageUrl),
@@ -570,6 +574,40 @@ function getGeneralRuntimeConfig() {
     homeCustomization: sanitizeHomeCustomization(fallbackHome, settings.homeCustomization),
     embedCustomization: sanitizeEmbedCustomization(settings.embedCustomization),
   };
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function toAbsoluteUrl(input, fallbackBaseUrl) {
+  try {
+    return new URL(String(input || ''), fallbackBaseUrl).toString();
+  } catch {
+    return fallbackBaseUrl;
+  }
+}
+
+function renderPublicIndexHtml(req) {
+  const runtimeConfig = getGeneralRuntimeConfig();
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const socialUrl = toAbsoluteUrl('/', baseUrl);
+  const faviconUrl = toAbsoluteUrl(runtimeConfig.faviconUrl || '/favicon-default.svg', baseUrl);
+  const socialTitle = `${runtimeConfig.channelName} - Ao Vivo`;
+  const socialDescription = `Confira ${runtimeConfig.channelName} na transmissao ao vivo!`;
+  const template = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+
+  return template
+    .replace(/{{SOCIAL_TITLE}}/g, escapeHtml(socialTitle))
+    .replace(/{{SOCIAL_DESCRIPTION}}/g, escapeHtml(socialDescription))
+    .replace(/{{SOCIAL_URL}}/g, escapeHtml(socialUrl))
+    .replace(/{{SOCIAL_IMAGE}}/g, escapeHtml(faviconUrl))
+    .replace(/{{CHANNEL_NAME}}/g, escapeHtml(runtimeConfig.channelName))
+    .replace(/{{FAVICON_URL}}/g, escapeHtml(faviconUrl));
 }
 
 function bumpStreamStateVersion() {
@@ -1820,6 +1858,7 @@ app.get('/api/analytics/summary', requireAdminAuth, async (req, res) => {
     topOperatingSystems: summarizeCounts(last24Hours, 'operatingSystem'),
     topCountries: summarizeCounts(last24Hours, 'country'),
     topCities: summarizeCounts(last24Hours, 'city'),
+    topIsps: summarizeCounts(last24Hours, 'isp'),
     topReferrers,
     hourlyVisits: buildHourlySeries(last24Hours),
     recentVisits,
@@ -1962,7 +2001,7 @@ app.delete('/api/blocks/:id', requireAdminAuth, async (req, res) => {
 });
 
 // ── Servir frontend estático ──────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
@@ -1993,7 +2032,8 @@ app.get('/embed', (req, res) => {
 });
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(renderPublicIndexHtml(req));
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

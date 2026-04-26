@@ -13,6 +13,7 @@
   const topCountries = document.getElementById('top-countries');
   const topCities = document.getElementById('top-cities');
   const topReferrers = document.getElementById('top-referrers');
+  const topIsps = document.getElementById('top-isps');
   const visitorDetailOverlay = document.getElementById('visitor-detail-overlay');
   const visitorDetailClose = document.getElementById('visitor-detail-close');
   const visitorDetailBody = document.getElementById('visitor-detail-body');
@@ -41,6 +42,7 @@
       panelCountries: 'Paises',
       panelOrigin: 'Origem dos acessos',
       panelCities: 'Cidades',
+      panelIsps: 'ISPs',
       panelRecent: 'Visitas recentes',
       panelRecentSub: 'Ultimos 25 acessos',
       thWhen: 'Quando',
@@ -105,6 +107,7 @@
       panelCountries: 'Countries',
       panelOrigin: 'Access origin',
       panelCities: 'Cities',
+      panelIsps: 'ISPs',
       panelRecent: 'Recent visits',
       panelRecentSub: 'Latest 25 accesses',
       thWhen: 'When',
@@ -192,6 +195,8 @@
     setText('panel-countries-subtitle', t('panelOrigin'));
     setText('panel-cities-title', t('panelCities'));
     setText('panel-cities-subtitle', t('panelOrigin'));
+    setText('panel-isps-title', t('panelIsps'));
+    setText('panel-isps-subtitle', t('panelOrigin'));
     setText('panel-referrers-title', t('panelReferrers'));
     setText('panel-referrers-subtitle', t('panelReferrersSub'));
     setText('panel-recent-title', t('panelRecent'));
@@ -441,6 +446,7 @@
     renderPieChart(topOs, data.topOperatingSystems);
     renderPieChart(topCountries, data.topCountries);
     renderPieChart(topCities, data.topCities);
+    renderPieChart(topIsps, data.topIsps);
     renderPieChart(topReferrers, data.topReferrers);
     renderRecentVisits(data.recentVisits);
     renderTopPrograms(data.topPrograms || []);
