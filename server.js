@@ -769,6 +769,45 @@ function getDeviceLabel(parsedUa) {
   return 'Desktop';
 }
 
+function detectHlsApplication(userAgent) {
+  const source = String(userAgent || '').trim();
+  if (!source) {
+    return null;
+  }
+
+  const signatures = [
+    { name: 'VLC', pattern: /\bVLC\/(\S+)/i },
+    { name: 'FFmpeg', pattern: /\bLavf\/(\S+)/i },
+    { name: 'Kodi', pattern: /\bKodi\/(\S+)/i },
+    { name: 'TiviMate', pattern: /\bTiviMate\/(\S+)/i },
+    { name: 'OTT Navigator', pattern: /\bOTT\s*Navigator\/(\S+)/i },
+    { name: 'IPTV Smarters', pattern: /\bIPTV\s*Smarters(?:\s*Pro)?\/(\S+)/i },
+    { name: 'XCIPTV', pattern: /\bXCIPTV\/(\S+)/i },
+    { name: 'Perfect Player', pattern: /\bPerfect\s*Player\/(\S+)/i },
+    { name: 'ProgTV', pattern: /\bProgTV\/(\S+)/i },
+    { name: 'ExoPlayer', pattern: /\bExoPlayerLib\/(\S+)/i },
+    { name: 'AppleCoreMedia', pattern: /\bAppleCoreMedia\/(\S+)/i },
+    { name: 'okhttp', pattern: /\bokhttp\/(\S+)/i },
+    { name: 'Lavf', pattern: /\bLavf\/(\S+)/i },
+  ];
+
+  for (const signature of signatures) {
+    const match = source.match(signature.pattern);
+    if (match) {
+      return {
+        name: signature.name,
+        version: String(match[1] || '').trim(),
+      };
+    }
+  }
+
+  if (/smart[- ]?stv|smart[- ]?tv|hbbtv|webos|tizen|googletv|android\s*tv|fire\s*tv|roku|appletv/i.test(source)) {
+    return { name: 'Smart TV App', version: '' };
+  }
+
+  return null;
+}
+
 function normalizeText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -1007,14 +1046,17 @@ function getCurrentProgramTitle() {
 }
 
 async function buildVisitEntry(req, sessionId, overrides = {}) {
-  const parser = new UAParser(req.headers['user-agent'] || '');
+  const userAgent = String(req.headers['user-agent'] || '');
+  const parser = new UAParser(userAgent);
   const parsedUa = parser.getResult();
   const ip = getClientIp(req);
   const location = await getLocationProfile(ip);
   const page = String(overrides.page || req.body?.page || req.path || '/').trim() || '/';
+  const accessType = String(overrides.accessType || classifyAccessType(page));
   const rawReferrer = String(overrides.referrer || req.body?.referrer || req.headers.referer || '').trim();
-  const browserName = parsedUa.browser?.name || 'Desconhecido';
-  const browserVersion = parsedUa.browser?.version || '';
+  const detectedHlsApp = accessType === 'hls_stream' ? detectHlsApplication(userAgent) : null;
+  const browserName = detectedHlsApp?.name || parsedUa.browser?.name || 'Desconhecido';
+  const browserVersion = detectedHlsApp?.version || parsedUa.browser?.version || '';
   const operatingSystemName = parsedUa.os?.name || 'Desconhecido';
   const operatingSystemVersion = parsedUa.os?.version || '';
   let referrer = '';
@@ -1047,10 +1089,10 @@ async function buildVisitEntry(req, sessionId, overrides = {}) {
     neighborhood: location.neighborhood,
     isp: location.isp,
     page,
-    accessType: String(overrides.accessType || classifyAccessType(page)),
+    accessType,
     referrer,
     currentProgram: getCurrentProgramTitle() || null,
-    userAgent: String(req.headers['user-agent'] || ''),
+    userAgent,
   };
 }
 
