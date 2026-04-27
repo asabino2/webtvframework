@@ -45,6 +45,7 @@
       panelIsps: 'ISPs',
       panelRecent: 'Visitas recentes',
       panelRecentSub: 'Ultimos 25 acessos',
+      searchAccesses: 'Pesquisar acessos',
       thWhen: 'Quando',
       thBrowser: 'Navegador/App',
       thSystem: 'Sistema',
@@ -115,6 +116,7 @@
       panelIsps: 'ISPs',
       panelRecent: 'Recent visits',
       panelRecentSub: 'Latest 25 accesses',
+      searchAccesses: 'Search accesses',
       thWhen: 'When',
       thBrowser: 'Browser/App',
       thSystem: 'System',
@@ -211,6 +213,7 @@
     setText('panel-referrers-subtitle', t('panelReferrersSub'));
     setText('panel-recent-title', t('panelRecent'));
     setText('panel-recent-subtitle', t('panelRecentSub'));
+    setText('recent-search-link', t('searchAccesses'));
     setText('th-when', t('thWhen'));
     setText('th-browser', t('thBrowser'));
     setText('th-system', t('thSystem'));

@@ -1441,6 +1441,39 @@ function buildTopPrograms(visits, limit = 5) {
     .slice(0, limit);
 }
 
+function normalizeSearchText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+const SQL_LIKE_ESCAPE_CHAR = '!';
+
+function parseDateStart(value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return null;
+  const date = new Date(`${normalized}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+
+function parseDateEnd(value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return null;
+  const date = new Date(`${normalized}T23:59:59.999Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+
+function escapeSqlLike(value) {
+  const escapeRe = new RegExp(`[${SQL_LIKE_ESCAPE_CHAR}%_]`, 'g');
+  return String(value || '').replace(escapeRe, (match) => `${SQL_LIKE_ESCAPE_CHAR}${match}`);
+}
+
+function buildLikeTerm(value) {
+  const normalized = normalizeSearchText(value);
+  if (!normalized) return null;
+  return `%${escapeSqlLike(normalized)}%`;
+}
+
 function parseXmltvDate(str) {
   // Formato: 20260418120000 +0000  ou  20260418120000 +0300
   if (!str) return null;
@@ -2040,6 +2073,90 @@ app.get('/api/analytics/summary', requireAdminAuth, async (req, res) => {
   });
 });
 
+app.get('/api/analytics/search', requireAdminAuth, async (req, res) => {
+  const limitRequested = Number(req.query.limit || 500);
+  const limit = Number.isFinite(limitRequested)
+    ? Math.min(Math.max(Math.round(limitRequested), 1), 2000)
+    : 500;
+
+  const filters = {
+    fromDate: String(req.query.fromDate || '').trim(),
+    toDate: String(req.query.toDate || '').trim(),
+    country: String(req.query.country || '').trim(),
+    state: String(req.query.state || '').trim(),
+    city: String(req.query.city || '').trim(),
+    device: String(req.query.device || '').trim(),
+    operatingSystem: String(req.query.operatingSystem || '').trim(),
+    browser: String(req.query.browser || '').trim(),
+  };
+
+  const whereClauses = [];
+  const whereParams = [];
+
+  const fromIso = parseDateStart(filters.fromDate);
+  const toIso = parseDateEnd(filters.toDate);
+
+  if (fromIso) {
+    whereClauses.push('started_at >= ?');
+    whereParams.push(fromIso);
+  }
+  if (toIso) {
+    whereClauses.push('started_at <= ?');
+    whereParams.push(toIso);
+  }
+
+  const countryLike = buildLikeTerm(filters.country);
+  if (countryLike) {
+    whereClauses.push(`LOWER(COALESCE(country, '')) LIKE ? ESCAPE '${SQL_LIKE_ESCAPE_CHAR}'`);
+    whereParams.push(countryLike);
+  }
+
+  const stateLike = buildLikeTerm(filters.state);
+  if (stateLike) {
+    whereClauses.push(`LOWER(COALESCE(state, '')) LIKE ? ESCAPE '${SQL_LIKE_ESCAPE_CHAR}'`);
+    whereParams.push(stateLike);
+  }
+
+  const cityLike = buildLikeTerm(filters.city);
+  if (cityLike) {
+    whereClauses.push(`LOWER(COALESCE(city, '')) LIKE ? ESCAPE '${SQL_LIKE_ESCAPE_CHAR}'`);
+    whereParams.push(cityLike);
+  }
+
+  const deviceLike = buildLikeTerm(filters.device);
+  if (deviceLike) {
+    whereClauses.push(`LOWER(COALESCE(device, '')) LIKE ? ESCAPE '${SQL_LIKE_ESCAPE_CHAR}'`);
+    whereParams.push(deviceLike);
+  }
+
+  const osLike = buildLikeTerm(filters.operatingSystem);
+  if (osLike) {
+    whereClauses.push(`LOWER(TRIM(COALESCE(operating_system_name, '') || ' ' || COALESCE(operating_system_version, ''))) LIKE ? ESCAPE '${SQL_LIKE_ESCAPE_CHAR}'`);
+    whereParams.push(osLike);
+  }
+
+  const browserLike = buildLikeTerm(filters.browser);
+  if (browserLike) {
+    whereClauses.push(`LOWER(TRIM(COALESCE(browser_name, '') || ' ' || COALESCE(browser_version, ''))) LIKE ? ESCAPE '${SQL_LIKE_ESCAPE_CHAR}'`);
+    whereParams.push(browserLike);
+  }
+
+  const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const countRow = await getSql(`SELECT COUNT(*) AS total FROM visits ${whereSql}`, whereParams);
+  const rows = await allSql(
+    `SELECT * FROM visits ${whereSql} ORDER BY started_at DESC LIMIT ?`,
+    [...whereParams, limit]
+  );
+
+  res.json({
+    totalMatched: Number(countRow?.total || 0),
+    returned: rows.length,
+    limit,
+    filters,
+    visits: rows.map(mapVisitRowToApi),
+  });
+});
+
 // Retorna canal + programa atual + próximo programa
 app.get('/api/epg/now', async (req, res) => {
   try {
@@ -2275,6 +2392,10 @@ app.get('/admin', (req, res) => {
 
 app.get('/estatisticas', requireAdminPage, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'stats.html'));
+});
+
+app.get('/estatisticas/pesquisa', requireAdminPage, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'stats-search.html'));
 });
 
 app.get('/bloqueios', requireAdminPage, (req, res) => {

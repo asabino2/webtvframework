@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Webtv framework — Pesquisa de acessos</title>
+  <link rel="stylesheet" href="/stats.css" />
+</head>
+<body>
+  <main class="stats-shell">
+    <section class="stats-hero">
+      <p class="stats-kicker" id="search-kicker">Painel interno</p>
+      <h1 id="search-main-title">Pesquisa de acessos</h1>
+      <p class="stats-subtitle" id="search-subtitle">Filtre os acessos por periodo, localizacao e dispositivo mantendo o mesmo detalhamento da lista de visitas recentes.</p>
+    </section>
+
+    <section class="panel-card search-toolbar">
+      <div class="panel-head">
+        <h2 id="search-filters-title">Filtros</h2>
+        <div class="panel-head-actions">
+          <a class="panel-link-btn" href="/estatisticas" id="search-back-link">Voltar para estatisticas</a>
+        </div>
+      </div>
+
+      <form id="search-form" class="search-form" autocomplete="off">
+        <div class="search-grid">
+          <label class="field-group" for="filter-from-date">
+            <span id="label-from-date">Data inicial</span>
+            <input id="filter-from-date" name="fromDate" type="date" />
+          </label>
+
+          <label class="field-group" for="filter-to-date">
+            <span id="label-to-date">Data final</span>
+            <input id="filter-to-date" name="toDate" type="date" />
+          </label>
+
+          <label class="field-group" for="filter-country">
+            <span id="label-country">Pais</span>
+            <input id="filter-country" name="country" type="text" placeholder="Ex.: Brasil" />
+          </label>
+
+          <label class="field-group" for="filter-state">
+            <span id="label-state">Estado</span>
+            <input id="filter-state" name="state" type="text" placeholder="Ex.: SP" />
+          </label>
+
+          <label class="field-group" for="filter-city">
+            <span id="label-city">Cidade</span>
+            <input id="filter-city" name="city" type="text" placeholder="Ex.: Sao Paulo" />
+          </label>
+
+          <label class="field-group" for="filter-device">
+            <span id="label-device">Tipo de dispositivo</span>
+            <input id="filter-device" name="device" type="text" placeholder="Ex.: Smart TV" />
+          </label>
+
+          <label class="field-group" for="filter-os">
+            <span id="label-os">Sistema operacional</span>
+            <input id="filter-os" name="operatingSystem" type="text" placeholder="Ex.: Android" />
+          </label>
+
+          <label class="field-group" for="filter-browser">
+            <span id="label-browser">Navegador/App</span>
+            <input id="filter-browser" name="browser" type="text" placeholder="Ex.: Chrome" />
+          </label>
+        </div>
+
+        <div class="search-actions">
+          <button class="panel-link-btn search-action-primary" id="search-submit" type="submit">Buscar acessos</button>
+          <button class="panel-link-btn search-action-secondary" id="search-clear" type="button">Limpar filtros</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel-card table-panel">
+      <div class="panel-head">
+        <h2 id="search-results-title">Resultado da pesquisa</h2>
+      </div>
+      <p class="search-status" id="search-status">Carregando...</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th id="th-when">Quando</th>
+              <th id="th-ip">IP</th>
+              <th id="th-browser">Navegador/App</th>
+              <th id="th-system">Sistema</th>
+              <th id="th-device-col">Dispositivo</th>
+              <th id="th-location">Localizacao</th>
+              <th id="th-access">Acesso</th>
+              <th id="th-referrer">Referrer</th>
+              <th id="th-watch-time">Tempo assistido</th>
+            </tr>
+          </thead>
+          <tbody id="search-visits"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="visitor-modal-overlay" id="visitor-detail-overlay" hidden>
+    <div class="visitor-modal" role="dialog" aria-modal="true" aria-labelledby="visitor-detail-title">
+      <button class="visitor-modal-close" id="visitor-detail-close" type="button" aria-label="Fechar">×</button>
+      <div class="visitor-modal-head">
+        <p class="visitor-modal-kicker" id="visitor-detail-kicker">Detalhes da visita</p>
+        <h2 id="visitor-detail-title">Informacoes do visitante</h2>
+      </div>
+      <div class="visitor-modal-body" id="visitor-detail-body"></div>
+    </div>
+  </div>
+
+  <script src="/stats-search.js"></script>
+</body>
+</html>

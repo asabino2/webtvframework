@@ -2,12 +2,12 @@
 
 Interface web para streaming ao vivo com EPG, analytics, embed e painel administrativo.
 
-[![Version](https://img.shields.io/badge/version-2.0.0-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
+[![Version](https://img.shields.io/badge/version-2.1.0-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 [![Node.js](https://img.shields.io/badge/node.js-18%2B-339933?logo=nodedotjs&logoColor=white&style=for-the-badge)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/status-active-2ea44f?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 
-Versão atual: **2.0.0**
+Versão atual: **2.1.0**
 
 ## 📺 Visão geral
 
@@ -16,7 +16,7 @@ O `webtvframework` fornece:
 - Player HLS com restream via backend
 - EPG em tempo real (programa atual e próximo)
 - Painel admin para configurações, personalização e bloqueio regional
-- Página de estatísticas com visitas e tempo assistido
+- Página de estatísticas com visitas, tempo assistido e painel de pesquisa/listagem com filtros
 - Embed configurável para uso em sites externos
 
 ## ⚙️ Instalação
@@ -92,6 +92,7 @@ Admin:
 - `GET /bloqueios`
 - `GET /embed-opcao`
 - `GET /estatisticas`
+- `GET /estatisticas/pesquisa`
 
 APIs de configuração:
 
@@ -101,6 +102,11 @@ APIs de configuração:
 - `POST /api/admin/home-customization`
 - `GET /api/admin/embed-customization`
 - `POST /api/admin/embed-customization`
+
+APIs de analytics:
+
+- `GET /api/analytics/summary`
+- `GET /api/analytics/search`
 
 ## 🗂️ Estrutura do projeto
 
@@ -118,7 +124,8 @@ webtvframework/
 └─ public/
    ├─ index.html / app.js / style.css
    ├─ admin.html / admin.js / admin.css
-   ├─ stats.html / stats.js / stats.css
+  ├─ stats.html / stats.js / stats.css
+  ├─ stats-search.html / stats-search.js
    ├─ embed.html / embed.js
    ├─ embed-options.html / embed-options.js
    ├─ settings.html / settings.js
@@ -133,10 +140,21 @@ webtvframework/
 - EPG com cache e exibição de programa atual/próximo
 - Bloqueio regional por atração
 - Analytics com audiência atual, visitas totais, referrer e tempo assistido
+- Painel dedicado para listagem e pesquisa de visitas com filtros por data, país, estado, cidade, dispositivo, sistema operacional e navegador/app
 - Embed com widgets configuráveis e ordenação visual
 - Personalização de tema, fonte, cores e controles do player
 
 ## 📝 Changelog recente
+
+### 2.1.0
+
+- Nova página `/estatisticas/pesquisa` no painel administrativo para listagem completa de visitas com filtros
+- Filtros disponíveis por data inicial/final, país, estado, cidade, tipo de dispositivo, sistema operacional e navegador/app
+- Resultado da busca reutiliza o mesmo formato visual e os mesmos dados da tabela de "Últimos 25 acessos"
+- Botão de detalhes por linha mantido na pesquisa, abrindo popup/modal com informações completas da visita
+- Atalho "Pesquisar acessos" adicionado na seção de visitas recentes dentro de `/estatisticas`
+- Período padrão da pesquisa configurado para os últimos 3 dias até a data atual
+- Correção da consulta SQLite para buscas textuais com `LIKE ... ESCAPE`, evitando erro ao pesquisar por campos diferentes de data
 
 ### 2.0.0
 
