@@ -226,3 +226,14 @@ webtvframework/
 ### 1.1.2
 
 - Embed configurável via painel admin (widgets e ordenação)
+
+## 📸 Screenshots
+
+Exemplos de telas da aplicação:
+
+![Home](./screenshots/home.png)
+![Painel administrativo](./screenshots/admin.png)
+![Estatísticas](./screenshots/stats.png)
+![Embed](./screenshots/embed.png)
+
+> Dica: adicione as imagens na pasta `screenshots/` na raiz do projeto para os previews aparecerem no GitHub.
