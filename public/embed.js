@@ -628,7 +628,27 @@
     streamStateVersion = nextVersion;
   }
 
-  initPlayer();
+  async function checkEmbedAccess() {
+    try {
+      const response = await fetch('/api/access-check?target=embed', { cache: 'no-store' });
+      if (!response.ok) return false;
+      const data = await response.json();
+      if (data && data.blocked) {
+        showLoading(false);
+        showError(true, data.message || 'Canal bloqueado para a sua regiao.');
+        return true;
+      }
+    } catch (_) {
+      // Se a verificação falhar, permite acesso normalmente
+    }
+    return false;
+  }
+
+  checkEmbedAccess().then((isBlocked) => {
+    if (!isBlocked) {
+      initPlayer();
+    }
+  });
   startAnalyticsSession();
   loadPublicConfig().then((data) => {
     streamStateVersion = Number(data?.streamStateVersion) || 0;

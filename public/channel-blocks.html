@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bloqueio de Canal</title>
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    .cb-page {
+      max-width: 980px;
+      margin: 40px auto;
+      padding: 0 20px 40px;
+    }
+
+    .cb-header {
+      margin-bottom: 20px;
+    }
+
+    .cb-header h1 {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+    }
+
+    .cb-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .cb-form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .cb-form .full {
+      grid-column: 1 / -1;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.9rem;
+      color: #d9dde4;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      color: #fff;
+      padding: 10px 12px;
+      font: inherit;
+      width: 100%;
+    }
+
+    .field select option {
+      background: #1a1a2e;
+      color: #fff;
+    }
+
+    .field textarea {
+      min-height: 72px;
+      resize: vertical;
+    }
+
+    .targets-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .target-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      user-select: none;
+    }
+
+    .target-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #ffca28;
+    }
+
+    .target-label:has(input:checked) {
+      border-color: #ffca28;
+      background: rgba(255, 202, 40, 0.12);
+    }
+
+    .btn-primary {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #ffca28;
+      color: #1a1a1a;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .cb-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    .cb-table th,
+    .cb-table td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 10px 8px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .cb-table th {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .badge-mode {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-blacklist {
+      background: rgba(255, 72, 72, 0.18);
+      color: #ff9a9a;
+      border: 1px solid rgba(255, 72, 72, 0.35);
+    }
+
+    .badge-whitelist {
+      background: rgba(72, 200, 120, 0.18);
+      color: #7eedb0;
+      border: 1px solid rgba(72, 200, 120, 0.35);
+    }
+
+    .badge-target {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      margin: 2px 2px 2px 0;
+    }
+
+    .toggle-active {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .toggle-active input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #ffca28;
+      cursor: pointer;
+    }
+
+    .btn-danger {
+      appearance: none;
+      border: 1px solid rgba(255, 72, 72, 0.5);
+      border-radius: 8px;
+      padding: 6px 10px;
+      background: rgba(255, 72, 72, 0.16);
+      color: #ffd7d7;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .muted {
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 0.86rem;
+    }
+
+    .empty-state {
+      padding: 14px;
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .mode-info {
+      font-size: 0.83rem;
+      color: rgba(255, 255, 255, 0.55);
+      margin-top: 4px;
+    }
+
+    @media (max-width: 780px) {
+      .cb-form {
+        grid-template-columns: 1fr;
+      }
+
+      .cb-table th:nth-child(3),
+      .cb-table td:nth-child(3) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="cb-page">
+    <header class="cb-header">
+      <h1 id="cb-title">Bloqueio de Canal</h1>
+      <p class="muted" id="cb-subtitle">Bloqueie o acesso ao site, stream HLS e/ou embed por regiao, independente da atracao.</p>
+    </header>
+
+    <section class="cb-card">
+      <form id="cb-form" class="cb-form" autocomplete="off">
+
+        <div class="field full">
+          <label id="label-mode">Modo de bloqueio</label>
+          <select id="cb-mode" name="mode" required>
+            <option value="blacklist" id="opt-blacklist">Lista negra (bloquear regioes listadas)</option>
+            <option value="whitelist" id="opt-whitelist">Lista branca (permitir somente regioes listadas)</option>
+          </select>
+          <span class="mode-info" id="mode-hint"></span>
+        </div>
+
+        <div class="field full">
+          <label id="label-targets">Aplicar bloqueio em</label>
+          <div class="targets-group">
+            <label class="target-label"><input type="checkbox" name="target_site" id="target_site" value="site" /> <span id="label-target-site">Site (pagina inicial)</span></label>
+            <label class="target-label"><input type="checkbox" name="target_stream" id="target_stream" value="stream" /> <span id="label-target-stream">Stream HLS</span></label>
+            <label class="target-label"><input type="checkbox" name="target_embed" id="target_embed" value="embed" /> <span id="label-target-embed">Embed independente</span></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="cb-countries" id="label-countries">Paises (separados por virgula)</label>
+          <input id="cb-countries" name="countries" type="text" placeholder="Ex.: brasil, argentina" />
+        </div>
+
+        <div class="field">
+          <label for="cb-states" id="label-states">Estados (separados por virgula)</label>
+          <input id="cb-states" name="states" type="text" placeholder="Ex.: sao paulo, minas gerais" />
+        </div>
+
+        <div class="field full">
+          <label for="cb-cities" id="label-cities">Cidades (separadas por virgula)</label>
+          <input id="cb-cities" name="cities" type="text" placeholder="Ex.: campinas, sorocaba" />
+        </div>
+
+        <div class="field full">
+          <label for="cb-reason" id="label-reason">Motivo (exibido para o usuario bloqueado)</label>
+          <textarea id="cb-reason" name="reason" placeholder="Ex.: restricao regional de acesso"></textarea>
+        </div>
+
+        <div class="full">
+          <button class="btn-primary" type="submit" id="btn-save-cb">Salvar bloqueio</button>
+        </div>
+
+      </form>
+    </section>
+
+    <section class="cb-card">
+      <h2 id="cb-list-title">Bloqueios cadastrados</h2>
+      <div id="cb-empty" class="empty-state" style="display:none">Nenhum bloqueio cadastrado.</div>
+      <table class="cb-table" id="cb-table" style="display:none">
+        <thead>
+          <tr>
+            <th id="th-mode">Modo</th>
+            <th id="th-targets">Alvos</th>
+            <th id="th-region">Regiao</th>
+            <th id="th-reason">Motivo</th>
+            <th id="th-active">Ativo</th>
+            <th id="th-actions">Acoes</th>
+          </tr>
+        </thead>
+        <tbody id="cb-body"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="/channel-blocks.js"></script>
+</body>
+</html>

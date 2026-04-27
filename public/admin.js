@@ -25,6 +25,7 @@
       adminKicker: 'Painel administrativo',
       languageLabel: 'Idioma',
       menuBlocks: 'Bloqueio de Regiao',
+      menuChannelBlocks: 'Bloqueio de Canal',
       menuStats: 'Estatisticas',
       menuSettings: 'Configuracoes Gerais',
       menuPersonalization: 'Personalizacao da Home',
@@ -38,6 +39,7 @@
       authPasswordLabel: 'Senha',
       authSubmit: 'Entrar',
       viewBlocks: 'Bloqueio de Regiao',
+      viewChannelBlocks: 'Bloqueio de Canal',
       viewStats: 'Estatisticas',
       viewSettings: 'Configuracoes Gerais',
       viewPersonalization: 'Personalizacao da Home',
@@ -59,6 +61,7 @@
       adminKicker: 'Admin panel',
       languageLabel: 'Language',
       menuBlocks: 'Region Blocking',
+      menuChannelBlocks: 'Channel Blocking',
       menuStats: 'Statistics',
       menuSettings: 'General Settings',
       menuPersonalization: 'Home Personalization',
@@ -72,6 +75,7 @@
       authPasswordLabel: 'Password',
       authSubmit: 'Sign in',
       viewBlocks: 'Region Blocking',
+      viewChannelBlocks: 'Channel Blocking',
       viewStats: 'Statistics',
       viewSettings: 'General Settings',
       viewPersonalization: 'Home Personalization',
@@ -102,6 +106,7 @@
 
   const routeByView = {
     blocks: '/bloqueios',
+    channelBlocks: '/bloqueio-canal',
     stats: '/estatisticas',
     settings: '/configuracoes-gerais',
     personalization: '/personalizacao',
@@ -109,6 +114,7 @@
   };
 
   function titleByView(view) {
+    if (view === 'channelBlocks') return t('viewChannelBlocks');
     if (view === 'stats') return t('viewStats');
     if (view === 'settings') return t('viewSettings');
     if (view === 'personalization') return t('viewPersonalization');
@@ -127,6 +133,7 @@
     setText('admin-kicker', t('adminKicker'));
     setText('admin-language-label', t('languageLabel'));
     setText('menu-blocks', t('menuBlocks'));
+    setText('menu-channel-blocks', t('menuChannelBlocks'));
     setText('menu-stats', t('menuStats'));
     setText('menu-settings', t('menuSettings'));
     setText('menu-personalization', t('menuPersonalization'));

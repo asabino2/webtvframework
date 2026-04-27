@@ -1347,11 +1347,30 @@
   // ── Inicializa ────────────────────────────────────────────────────────────
   applyStaticTranslations();
 
+  async function checkSiteAccess() {
+    try {
+      const response = await fetch('/api/access-check?target=site', { cache: 'no-store' });
+      if (!response.ok) return false;
+      const data = await response.json();
+      if (data && data.blocked) {
+        showLoading(false);
+        showError(true, data.message || 'Canal bloqueado para a sua regiao.');
+        return true;
+      }
+    } catch (_) {
+      // Se a verificação falhar, permite acesso normalmente
+    }
+    return false;
+  }
+
   loadPublicConfig().then((data) => {
     streamStateVersion = Number(data?.streamStateVersion) || 0;
-  }).catch(() => {}).finally(() => {
+  }).catch(() => {}).finally(async () => {
     applyStaticTranslations();
-    initPlayer();
+    const isBlocked = await checkSiteAccess();
+    if (!isBlocked) {
+      initPlayer();
+    }
     focusPlayerForTv();
     restartEpgPolling();
     startAnalyticsSession();

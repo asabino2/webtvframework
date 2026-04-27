@@ -16,6 +16,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 const VISITS_FILE = path.join(DATA_DIR, 'visits.json');
 const VISITS_DB_FILE = path.join(DATA_DIR, 'visits.db');
 const BLOCKS_FILE = path.join(DATA_DIR, 'region-blocks.json');
+const CHANNEL_BLOCKS_FILE = path.join(DATA_DIR, 'channel-blocks.json');
 const GENERAL_SETTINGS_FILE = path.join(DATA_DIR, 'general-settings.json');
 const VIEWER_TTL_MS = 45 * 1000;
 const SESSION_PING_MS = 20 * 1000;
@@ -144,6 +145,9 @@ function ensureDataStore() {
   }
   if (!fs.existsSync(BLOCKS_FILE)) {
     fs.writeFileSync(BLOCKS_FILE, '[]', 'utf8');
+  }
+  if (!fs.existsSync(CHANNEL_BLOCKS_FILE)) {
+    fs.writeFileSync(CHANNEL_BLOCKS_FILE, '[]', 'utf8');
   }
   if (!fs.existsSync(GENERAL_SETTINGS_FILE)) {
     fs.writeFileSync(GENERAL_SETTINGS_FILE, '{}', 'utf8');
@@ -658,6 +662,64 @@ function readRegionBlocks() {
 async function writeRegionBlocks(blocks) {
   ensureDataStore();
   await fs.promises.writeFile(BLOCKS_FILE, JSON.stringify(blocks, null, 2), 'utf8');
+}
+
+function readChannelBlocks() {
+  ensureDataStore();
+  try {
+    const blocks = JSON.parse(fs.readFileSync(CHANNEL_BLOCKS_FILE, 'utf8'));
+    return Array.isArray(blocks) ? blocks : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeChannelBlocks(blocks) {
+  ensureDataStore();
+  await fs.promises.writeFile(CHANNEL_BLOCKS_FILE, JSON.stringify(blocks, null, 2), 'utf8');
+}
+
+function matchesChannelRegion(block, country, state, city) {
+  const c = normalizeText(country);
+  const s = normalizeText(state);
+  const ci = normalizeText(city);
+
+  if (Array.isArray(block.countries) && block.countries.length && !block.countries.includes(c)) {
+    return false;
+  }
+  if (Array.isArray(block.states) && block.states.length && !block.states.includes(s)) {
+    return false;
+  }
+  if (Array.isArray(block.cities) && block.cities.length && !block.cities.includes(ci)) {
+    return false;
+  }
+  return true;
+}
+
+function checkChannelAccess(ip, target) {
+  const blocks = readChannelBlocks().filter(
+    (b) => b.active !== false && Array.isArray(b.targets) && b.targets.includes(target)
+  );
+  if (!blocks.length) return null;
+
+  const location = getLocationFromGeoLite(ip);
+  const country = location.country;
+  const state = location.region;
+  const city = location.city;
+
+  for (const block of blocks) {
+    const matches = matchesChannelRegion(block, country, state, city);
+    const isBlocked = block.mode === 'whitelist' ? !matches : matches;
+    if (isBlocked) {
+      const reason = String(block.reason || '').trim() || 'não informado';
+      return {
+        blocked: true,
+        reason,
+        message: `Canal bloqueado para a sua região, motivo: ${reason}`,
+      };
+    }
+  }
+  return null;
 }
 
 async function persistVisit(entry) {
@@ -1493,6 +1555,12 @@ app.get('/stream/playlist.m3u8', async (req, res) => {
       console.error('[ANALYTICS] Erro ao registrar visita HLS:', error.message);
     });
 
+    const channelBlock = checkChannelAccess(getClientIp(req), 'stream');
+    if (channelBlock) {
+      sendNoticeAsPlaylist(res, channelBlock.message);
+      return;
+    }
+
     const geoBlock = await getGeoBlockForRequest(req);
     if (geoBlock) {
       sendNoticeAsPlaylist(res, geoBlock.message);
@@ -2065,6 +2133,98 @@ app.get('/api/epg/channels', async (req, res) => {
 
 // ── Rotas: Bloqueio regional ────────────────────────────────────────────────
 
+// ── Rotas: Verificação de acesso ao canal ────────────────────────────────────
+app.get('/api/access-check', (req, res) => {
+  const target = String(req.query.target || 'site').toLowerCase();
+  if (!['site', 'stream', 'embed'].includes(target)) {
+    return res.status(400).json({ error: 'Target inválido. Use site, stream ou embed.' });
+  }
+  const ip = getClientIp(req);
+  const result = checkChannelAccess(ip, target);
+  if (result) {
+    return res.json({ blocked: true, reason: result.reason, message: result.message, target });
+  }
+  return res.json({ blocked: false, target });
+});
+
+// ── Rotas: Bloqueios de canal (independente de atração) ──────────────────────
+app.get('/api/channel-blocks', requireAdminAuth, (req, res) => {
+  res.json(readChannelBlocks());
+});
+
+app.post('/api/channel-blocks', requireAdminAuth, async (req, res) => {
+  const mode = String(req.body?.mode || 'blacklist').trim();
+  if (!['blacklist', 'whitelist'].includes(mode)) {
+    return res.status(400).json({ error: 'mode deve ser blacklist ou whitelist.' });
+  }
+
+  const rawTargets = Array.isArray(req.body?.targets) ? req.body.targets : [];
+  const targets = rawTargets.filter((t) => ['site', 'stream', 'embed'].includes(String(t || '').trim()));
+  if (!targets.length) {
+    return res.status(400).json({ error: 'Pelo menos um target é obrigatório (site, stream ou embed).' });
+  }
+
+  const block = {
+    id: crypto.randomUUID(),
+    mode,
+    targets,
+    countries: normalizeCsvOrArray(req.body?.countries),
+    states: normalizeCsvOrArray(req.body?.states),
+    cities: normalizeCsvOrArray(req.body?.cities),
+    reason: String(req.body?.reason || '').trim(),
+    active: req.body?.active !== false,
+    createdAt: new Date().toISOString(),
+  };
+
+  const blocks = readChannelBlocks();
+  blocks.push(block);
+  await writeChannelBlocks(blocks);
+  res.status(201).json(block);
+});
+
+app.patch('/api/channel-blocks/:id', requireAdminAuth, async (req, res) => {
+  const blocks = readChannelBlocks();
+  const index = blocks.findIndex((b) => b.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Bloqueio não encontrado.' });
+  }
+
+  const existing = blocks[index];
+  const mode = req.body?.mode !== undefined ? String(req.body.mode).trim() : existing.mode;
+  if (!['blacklist', 'whitelist'].includes(mode)) {
+    return res.status(400).json({ error: 'mode deve ser blacklist ou whitelist.' });
+  }
+
+  const rawTargets = Array.isArray(req.body?.targets) ? req.body.targets : existing.targets;
+  const targets = rawTargets.filter((t) => ['site', 'stream', 'embed'].includes(String(t || '').trim()));
+
+  blocks[index] = {
+    ...existing,
+    mode,
+    targets: targets.length ? targets : existing.targets,
+    countries: req.body?.countries !== undefined ? normalizeCsvOrArray(req.body.countries) : existing.countries,
+    states: req.body?.states !== undefined ? normalizeCsvOrArray(req.body.states) : existing.states,
+    cities: req.body?.cities !== undefined ? normalizeCsvOrArray(req.body.cities) : existing.cities,
+    reason: req.body?.reason !== undefined ? String(req.body.reason || '').trim() : existing.reason,
+    active: req.body?.active !== undefined ? req.body.active !== false : existing.active,
+  };
+
+  await writeChannelBlocks(blocks);
+  res.json(blocks[index]);
+});
+
+app.delete('/api/channel-blocks/:id', requireAdminAuth, async (req, res) => {
+  const blocks = readChannelBlocks();
+  const nextBlocks = blocks.filter((b) => b.id !== req.params.id);
+  if (nextBlocks.length === blocks.length) {
+    return res.status(404).json({ error: 'Bloqueio não encontrado.' });
+  }
+  await writeChannelBlocks(nextBlocks);
+  res.status(204).end();
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+
 app.get('/api/blocks', requireAdminAuth, (req, res) => {
   res.json(readRegionBlocks());
 });
@@ -2119,6 +2279,10 @@ app.get('/estatisticas', requireAdminPage, (req, res) => {
 
 app.get('/bloqueios', requireAdminPage, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'blocks.html'));
+});
+
+app.get('/bloqueio-canal', requireAdminPage, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'channel-blocks.html'));
 });
 
 app.get('/configuracoes-gerais', requireAdminPage, (req, res) => {
