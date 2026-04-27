@@ -1,6 +1,10 @@
-[![webtvframework logo: a media player icon in blue and white colors](./public/webtvframework.ico)](https://github.com/asabino2/webtvframework)
+<div align="center">
+
+![webtvframework logo: a media player icon in blue and white colors](./public/webtvframework.ico)
 
 Interface web para streaming ao vivo com EPG, analytics, embed e painel administrativo.
+
+</div>
 
 [![Version](https://img.shields.io/badge/version-2.1.0-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 [![Node.js](https://img.shields.io/badge/node.js-18%2B-339933?logo=nodedotjs&logoColor=white&style=for-the-badge)](https://nodejs.org/)
