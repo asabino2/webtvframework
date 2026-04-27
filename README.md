@@ -231,9 +231,10 @@ webtvframework/
 
 Exemplos de telas da aplicação:
 
-![Home](./screenshots/home.png)
-![Painel administrativo](./screenshots/admin.png)
-![Estatísticas](./screenshots/stats.png)
-![Embed](./screenshots/embed.png)
+![Home](https://github.com/user-attachments/assets/b59877e1-8ad1-4bea-9859-71337534274d)
+![EPG](https://github.com/user-attachments/assets/db77ad32-acad-46c2-83f4-3f2bc567a11b)
+![Painel administrativo](https://github.com/user-attachments/assets/45eaabbf-b664-4145-b4ea-4e2398223920)
+![Estatísticas](https://github.com/user-attachments/assets/70fe91b2-ae54-4c6f-85b3-dfec5ef528aa)
+![Estatísticas](https://github.com/user-attachments/assets/ddc6c308-fc5d-4370-a2be-b9a9b25aae56)
 
-> Dica: adicione as imagens na pasta `screenshots/` na raiz do projeto para os previews aparecerem no GitHub.
+
