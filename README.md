@@ -1,8 +1,5 @@
-<div align="center">
-
 # [![webtvframework logo: a media player icon in blue and white colors]](./public/webtvframework.ico)
 
-</div>
 
 Interface web para streaming ao vivo com EPG, analytics, embed e painel administrativo.
 
