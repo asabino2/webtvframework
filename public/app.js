@@ -226,7 +226,7 @@
   let streamStateChannel = null;
   let channelName = 'Webtv framework';
   let appVersion = '0.0.2';
-  let faviconUrl = '';
+  let faviconUrl = '/webtvframework.ico';
   let streamStateVersion = 0;
   let epgEnabled = true;
   let homeCustomization = null;
@@ -294,7 +294,7 @@
 
   function updateSocialMeta() {
     const shareUrl = buildShareUrl();
-    const absoluteFaviconUrl = faviconUrl ? new URL(faviconUrl, window.location.origin).toString() : new URL('/favicon-default.svg', window.location.origin).toString();
+    const absoluteFaviconUrl = faviconUrl ? new URL(faviconUrl, window.location.origin).toString() : new URL('/webtvframework.ico', window.location.origin).toString();
     const socialTitle = `${channelName} - ${t('titleLive')}`;
     const socialDescription = buildShareMessage();
 

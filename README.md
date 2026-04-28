@@ -6,12 +6,12 @@ Interface web para streaming ao vivo com EPG, analytics, embed e painel administ
 
 </div>
 
-[![Version](https://img.shields.io/badge/version-2.1.0-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
+[![Version](https://img.shields.io/badge/version-2.1.1-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 [![Node.js](https://img.shields.io/badge/node.js-18%2B-339933?logo=nodedotjs&logoColor=white&style=for-the-badge)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/status-active-2ea44f?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 
-Versão atual: **2.1.0**
+Versão atual: **2.1.1**
 
 ## 📺 Visão geral
 
@@ -149,6 +149,13 @@ webtvframework/
 - Personalização de tema, fonte, cores e controles do player
 
 ## 📝 Changelog recente
+
+### 2.1.1
+
+- Ajuste do ícone padrão quando `faviconUrl` não está definido em configurações gerais
+- Fallback de favicon da aplicação principal atualizado para `/webtvframework.ico`
+- Fallback do ícone ao lado do nome do canal na home atualizado para `/webtvframework.ico`
+- Social image (Open Graph/Twitter) da home passa a usar o mesmo fallback `/webtvframework.ico`
 
 ### 2.1.0
 

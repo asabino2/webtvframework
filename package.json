@@ -1,6 +1,6 @@
 {
   "name": "webtvframework",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Interface Web para canais de WebTV",
   "main": "server.js",
   "scripts": {

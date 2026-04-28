@@ -45,7 +45,7 @@ let updatePromise = null;
 const UPSTREAM_BASE = process.env.UPSTREAM_BASE || 'http://192.168.1.186:8409';
 const DEFAULT_M3U8_URL = process.env.M3U8_URL || `${UPSTREAM_BASE}/iptv/channel/2.m3u8?mode=segmenter`;
 const DEFAULT_EPG_URL = process.env.EPG_URL || '';
-const DEFAULT_FAVICON_URL = process.env.FAVICON_URL || '/favicon-default.svg';
+const DEFAULT_FAVICON_URL = process.env.FAVICON_URL || '/webtvframework.ico';
 const STREAM_CHANNEL_ID = process.env.STREAM_CHANNEL_ID || null;
 const HOME_THEME_PRESETS = {
   default: {
@@ -625,7 +625,7 @@ function renderPublicIndexHtml(req) {
   const runtimeConfig = getGeneralRuntimeConfig();
   const baseUrl = `${req.protocol}://${req.get('host')}`;
   const socialUrl = toAbsoluteUrl('/', baseUrl);
-  const faviconUrl = toAbsoluteUrl(runtimeConfig.faviconUrl || '/favicon-default.svg', baseUrl);
+  const faviconUrl = toAbsoluteUrl(runtimeConfig.faviconUrl || '/webtvframework.ico', baseUrl);
   const socialTitle = `${runtimeConfig.channelName} - Ao Vivo`;
   const socialDescription = `Confira ${runtimeConfig.channelName} na transmissao ao vivo!`;
   const template = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
