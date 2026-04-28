@@ -6,12 +6,12 @@ Interface web para streaming ao vivo com EPG, analytics, embed e painel administ
 
 </div>
 
-[![Version](https://img.shields.io/badge/version-2.1.1-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
+[![Version](https://img.shields.io/badge/version-2.1.5-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 [![Node.js](https://img.shields.io/badge/node.js-18%2B-339933?logo=nodedotjs&logoColor=white&style=for-the-badge)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/status-active-2ea44f?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 
-Versão atual: **2.1.1**
+Versão atual: **2.1.5**
 
 ## 📺 Visão geral
 
@@ -149,6 +149,13 @@ webtvframework/
 - Personalização de tema, fonte, cores e controles do player
 
 ## 📝 Changelog recente
+
+### 2.1.5
+
+- Opção de idioma movida para a seção de configurações gerais
+- Suporte expandido de idiomas no painel administrativo: Espanhol, Russo, Mandarim, Polonês, Italiano e Alemão
+- Novos temas pré-definidos adicionados na personalização da home: Forest, Neon, Retro e Minimal
+- Ícone padrão do Webtv Framework adicionado no topo do painel administrativo (acima de "Painel administrativo") com melhor destaque visual
 
 ### 2.1.1
 

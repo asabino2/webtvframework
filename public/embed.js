@@ -1,6 +1,380 @@
 (function () {
   'use strict';
 
+  const LANG_KEY = 'webtv_lang';
+  const i18n = {
+    pt: {
+      loadingEpg: 'Carregando...',
+      updateUnavailable: 'Atualizacao indisponivel',
+      scheduleUnavailable: 'Sem informacao de programacao',
+      coverMissing: 'Sem imagem de capa',
+      noSchedule: 'Sem programacao disponivel',
+      timeUnavailable: 'Horario indisponivel',
+      untitled: 'Sem titulo',
+      currentProgramTitle: 'Programa atual',
+      nextProgramTitle: 'Proximo programa',
+      epgButtonLabel: 'Grade de programacao',
+      epgUnavailable: 'EPG indisponivel',
+      seeFullGuide: 'Ver grade completa',
+      currentAudienceTitle: 'Audiencia atual',
+      totalAudienceTitle: 'Audiencia total',
+      waitingUpdate: 'Aguardando atualizacao...',
+      shareTransmission: 'Compartilhar transmissao',
+      copyLink: 'Copiar link',
+      linkCopied: 'Copiado!',
+      copyFailed: 'Falha ao copiar',
+      noWidgetsEnabled: 'Nenhum widget habilitado no embed.',
+      loadingProgramData: 'Carregando...',
+      epgCloseButton: 'Fechar',
+      epgTitle: '📋 Grade de Programacao',
+      epgNoData: 'Nenhum programa disponivel.',
+      close: 'Fechar',
+      mute: 'Mudo',
+      fullscreen: 'Tela Cheia',
+      cast: 'Enviar para Google Cast',
+      playPause: 'Play / Pause',
+      volume: 'Volume',
+      updatedAt: 'Atualizado as',
+      nextProgramNotAvailable: 'Sem proximo programa',
+      loadingEpg: 'Carregando...',
+      noProgrammingAvailable: 'Nenhuma programacao disponivel.',
+      untitled: 'Sem titulo',
+      synopsisUnavailable: 'Sinopse indisponivel.',
+      streamUnavailable: 'Transmissao indisponivel no momento.',
+      streamError: 'Erro ao carregar o stream.',
+      hlsNotSupported: 'Navegador sem suporte HLS.',
+      couldNotLoadSchedule: 'Nao foi possivel carregar a grade de programacao.',
+      channel: 'Canal'
+    },
+    en: {
+      loadingEpg: 'Loading...',
+      updateUnavailable: 'Update unavailable',
+      scheduleUnavailable: 'No schedule information available',
+      coverMissing: 'No cover image',
+      noSchedule: 'No programming available.',
+      timeUnavailable: 'Time unavailable',
+      untitled: 'Untitled',
+      currentProgramTitle: 'Current program',
+      nextProgramTitle: 'Next program',
+      epgButtonLabel: 'Program guide',
+      epgUnavailable: 'EPG unavailable',
+      seeFullGuide: 'See full guide',
+      currentAudienceTitle: 'Current audience',
+      totalAudienceTitle: 'Total audience',
+      waitingUpdate: 'Waiting for update...',
+      shareTransmission: 'Share broadcast',
+      copyLink: 'Copy link',
+      linkCopied: 'Copied!',
+      copyFailed: 'Copy failed',
+      noWidgetsEnabled: 'No widgets enabled in embed.',
+      loadingProgramData: 'Loading...',
+      epgCloseButton: 'Close',
+      epgTitle: '📋 Program Guide',
+      epgNoData: 'No programs available.',
+      close: 'Close',
+      mute: 'Mute',
+      fullscreen: 'Fullscreen',
+      cast: 'Cast to Google Cast',
+      playPause: 'Play / Pause',
+      volume: 'Volume',
+      updatedAt: 'Updated at',
+      nextProgramNotAvailable: 'No next program',
+      loadingEpg: 'Loading...',
+      noProgrammingAvailable: 'No programming available.',
+      untitled: 'Untitled',
+      synopsisUnavailable: 'Synopsis unavailable.',
+      streamUnavailable: 'Broadcast unavailable at the moment.',
+      streamError: 'Error loading the stream.',
+      hlsNotSupported: 'Browser does not support HLS.',
+      couldNotLoadSchedule: 'Could not load the program schedule.',
+      channel: 'Channel'
+    },
+    es: {
+      loadingEpg: 'Cargando...',
+      updateUnavailable: 'Actualización no disponible',
+      scheduleUnavailable: 'Sin información de programación disponible',
+      coverMissing: 'Sin imagen de portada',
+      noSchedule: 'Sin programación disponible.',
+      timeUnavailable: 'Hora no disponible',
+      untitled: 'Sin título',
+      currentProgramTitle: 'Programa actual',
+      nextProgramTitle: 'Próximo programa',
+      epgButtonLabel: 'Guía de programas',
+      epgUnavailable: 'EPG no disponible',
+      seeFullGuide: 'Ver guía completa',
+      currentAudienceTitle: 'Audiencia actual',
+      totalAudienceTitle: 'Audiencia total',
+      waitingUpdate: 'Esperando actualización...',
+      shareTransmission: 'Compartir transmisión',
+      copyLink: 'Copiar enlace',
+      linkCopied: '¡Copiado!',
+      copyFailed: 'Error al copiar',
+      noWidgetsEnabled: 'Sin widgets habilitados en embed.',
+      loadingProgramData: 'Cargando...',
+      epgCloseButton: 'Cerrar',
+      epgTitle: '📋 Guía de Programas',
+      epgNoData: 'Sin programas disponibles.',
+      close: 'Cerrar',
+      mute: 'Silenciar',
+      fullscreen: 'Pantalla Completa',
+      cast: 'Enviar a Google Cast',
+      playPause: 'Reproducir / Pausar',
+      volume: 'Volumen',
+      updatedAt: 'Actualizado a las',
+      nextProgramNotAvailable: 'Sin próximo programa',
+      loadingEpg: 'Cargando...',
+      noProgrammingAvailable: 'Sin programación disponible.',
+      untitled: 'Sin título',
+      synopsisUnavailable: 'Sinopsis no disponible.',
+      streamUnavailable: 'Transmisión no disponible en este momento.',
+      streamError: 'Error al cargar la transmisión.',
+      hlsNotSupported: 'Navegador sin soporte HLS.',
+      couldNotLoadSchedule: 'No se pudo cargar la guía de programas.',
+      channel: 'Canal'
+    },
+    ru: {
+      loadingEpg: 'Загрузка...',
+      updateUnavailable: 'Обновление недоступно',
+      scheduleUnavailable: 'Информация о расписании недоступна',
+      coverMissing: 'Нет изображения обложки',
+      noSchedule: 'Программирование недоступно.',
+      timeUnavailable: 'Время недоступно',
+      untitled: 'Без названия',
+      currentProgramTitle: 'Текущая программа',
+      nextProgramTitle: 'Следующая программа',
+      epgButtonLabel: 'Программа',
+      epgUnavailable: 'EPG недоступен',
+      seeFullGuide: 'Полная программа',
+      currentAudienceTitle: 'Текущая аудитория',
+      totalAudienceTitle: 'Общая аудитория',
+      waitingUpdate: 'Ожидание обновления...',
+      shareTransmission: 'Поделиться трансляцией',
+      copyLink: 'Скопировать ссылку',
+      linkCopied: 'Скопировано!',
+      copyFailed: 'Ошибка копирования',
+      noWidgetsEnabled: 'Нет включенных виджетов в embed.',
+      loadingProgramData: 'Загрузка...',
+      epgCloseButton: 'Закрыть',
+      epgTitle: '📋 Программа',
+      epgNoData: 'Нет доступных программ.',
+      close: 'Закрыть',
+      mute: 'Без звука',
+      fullscreen: 'Полный экран',
+      cast: 'Отправить на Google Cast',
+      playPause: 'Воспроизведение / Пауза',
+      volume: 'Громкость',
+      updatedAt: 'Обновлено в',
+      nextProgramNotAvailable: 'Нет следующей программы',
+      loadingEpg: 'Загрузка...',
+      noProgrammingAvailable: 'Программирование недоступно.',
+      untitled: 'Без названия',
+      synopsisUnavailable: 'Описание недоступно.',
+      streamUnavailable: 'Трансляция недоступна в данный момент.',
+      streamError: 'Ошибка при загрузке потока.',
+      hlsNotSupported: 'Браузер не поддерживает HLS.',
+      couldNotLoadSchedule: 'Не удалось загрузить программу.',
+      channel: 'Канал'
+    },
+    zh: {
+      loadingEpg: '加载中...',
+      updateUnavailable: '更新不可用',
+      scheduleUnavailable: '无可用的时间表信息',
+      coverMissing: '无封面图片',
+      noSchedule: '没有可用的节目。',
+      timeUnavailable: '时间不可用',
+      untitled: '无标题',
+      currentProgramTitle: '当前节目',
+      nextProgramTitle: '下一个节目',
+      epgButtonLabel: '节目指南',
+      epgUnavailable: 'EPG不可用',
+      seeFullGuide: '查看完整指南',
+      currentAudienceTitle: '当前观众',
+      totalAudienceTitle: '总观众',
+      waitingUpdate: '等待更新...',
+      shareTransmission: '分享直播',
+      copyLink: '复制链接',
+      linkCopied: '已复制！',
+      copyFailed: '复制失败',
+      noWidgetsEnabled: '未在embed中启用任何小部件。',
+      loadingProgramData: '加载中...',
+      epgCloseButton: '关闭',
+      epgTitle: '📋 节目指南',
+      epgNoData: '无可用节目。',
+      close: '关闭',
+      mute: '静音',
+      fullscreen: '全屏',
+      cast: '投射到Google Cast',
+      playPause: '播放 / 暂停',
+      volume: '音量',
+      updatedAt: '更新于',
+      nextProgramNotAvailable: '没有下一个节目',
+      loadingEpg: '加载中...',
+      noProgrammingAvailable: '没有可用节目。',
+      untitled: '无标题',
+      synopsisUnavailable: '摘要不可用。',
+      streamUnavailable: '直播暂时不可用。',
+      streamError: '加载流错误。',
+      hlsNotSupported: '浏览器不支持HLS。',
+      couldNotLoadSchedule: '无法加载节目指南。',
+      channel: '频道'
+    },
+    pl: {
+      loadingEpg: 'Ładowanie...',
+      updateUnavailable: 'Aktualizacja niedostępna',
+      scheduleUnavailable: 'Brak dostępnych informacji o harmonogramie',
+      coverMissing: 'Brak obrazu okładki',
+      noSchedule: 'Brak dostępnego programowania.',
+      timeUnavailable: 'Czas niedostępny',
+      untitled: 'Bez tytułu',
+      currentProgramTitle: 'Bieżący program',
+      nextProgramTitle: 'Następny program',
+      epgButtonLabel: 'Przewodnik programu',
+      epgUnavailable: 'EPG niedostępny',
+      seeFullGuide: 'Zobacz pełny przewodnik',
+      currentAudienceTitle: 'Bieżąca widownia',
+      totalAudienceTitle: 'Całkowita widownia',
+      waitingUpdate: 'Oczekiwanie na aktualizację...',
+      shareTransmission: 'Udostępnij transmisję',
+      copyLink: 'Skopiuj link',
+      linkCopied: 'Skopiowano!',
+      copyFailed: 'Błąd kopiowania',
+      noWidgetsEnabled: 'Brak włączonych widgetów w embed.',
+      loadingProgramData: 'Ładowanie...',
+      epgCloseButton: 'Zamknij',
+      epgTitle: '📋 Przewodnik Programu',
+      epgNoData: 'Brak dostępnych programów.',
+      close: 'Zamknij',
+      mute: 'Wycisz',
+      fullscreen: 'Pełny ekran',
+      cast: 'Wyślij do Google Cast',
+      playPause: 'Odtwórz / Pauza',
+      volume: 'Głośność',
+      updatedAt: 'Zaktualizowane o',
+      nextProgramNotAvailable: 'Brak następnego programu',
+      loadingEpg: 'Ładowanie...',
+      noProgrammingAvailable: 'Brak dostępnego programowania.',
+      untitled: 'Bez tytułu',
+      synopsisUnavailable: 'Streszczenie niedostępne.',
+      streamUnavailable: 'Transmisja niedostępna w tej chwili.',
+      streamError: 'Błąd podczas ładowania strumienia.',
+      hlsNotSupported: 'Przeglądarka nie obsługuje HLS.',
+      couldNotLoadSchedule: 'Nie można załadować harmonogramu programu.',
+      channel: 'Kanał'
+    },
+    it: {
+      loadingEpg: 'Caricamento...',
+      updateUnavailable: 'Aggiornamento non disponibile',
+      scheduleUnavailable: 'Nessuna informazione sulla programmazione disponibile',
+      coverMissing: 'Nessuna immagine di copertina',
+      noSchedule: 'Nessuna programmazione disponibile.',
+      timeUnavailable: 'Ora non disponibile',
+      untitled: 'Senza titolo',
+      currentProgramTitle: 'Programma attuale',
+      nextProgramTitle: 'Prossimo programma',
+      epgButtonLabel: 'Guida programmi',
+      epgUnavailable: 'EPG non disponibile',
+      seeFullGuide: 'Vedi guida completa',
+      currentAudienceTitle: 'Pubblico attuale',
+      totalAudienceTitle: 'Pubblico totale',
+      waitingUpdate: 'In attesa di aggiornamento...',
+      shareTransmission: 'Condividi trasmissione',
+      copyLink: 'Copia link',
+      linkCopied: 'Copiato!',
+      copyFailed: 'Copia non riuscita',
+      noWidgetsEnabled: 'Nessun widget abilitato in embed.',
+      loadingProgramData: 'Caricamento...',
+      epgCloseButton: 'Chiudi',
+      epgTitle: '📋 Guida Programmi',
+      epgNoData: 'Nessun programma disponibile.',
+      close: 'Chiudi',
+      mute: 'Muto',
+      fullscreen: 'Schermo Intero',
+      cast: 'Trasmetti a Google Cast',
+      playPause: 'Riproduci / Pausa',
+      volume: 'Volume',
+      updatedAt: 'Aggiornato alle',
+      nextProgramNotAvailable: 'Nessun prossimo programma',
+      loadingEpg: 'Caricamento...',
+      noProgrammingAvailable: 'Nessuna programmazione disponibile.',
+      untitled: 'Senza titolo',
+      synopsisUnavailable: 'Trama non disponibile.',
+      streamUnavailable: 'Trasmissione non disponibile al momento.',
+      streamError: 'Errore durante il caricamento del flusso.',
+      hlsNotSupported: 'Il browser non supporta HLS.',
+      couldNotLoadSchedule: 'Impossibile caricare la guida ai programmi.',
+      channel: 'Canale'
+    },
+    de: {
+      loadingEpg: 'Wird geladen...',
+      updateUnavailable: 'Aktualisierung nicht verfügbar',
+      scheduleUnavailable: 'Keine Terminplaninformationen verfügbar',
+      coverMissing: 'Kein Titelbild vorhanden',
+      noSchedule: 'Keine Programmierung verfügbar.',
+      timeUnavailable: 'Zeit nicht verfügbar',
+      untitled: 'Ohne Titel',
+      currentProgramTitle: 'Aktuelles Programm',
+      nextProgramTitle: 'Nächstes Programm',
+      epgButtonLabel: 'Programmführer',
+      epgUnavailable: 'EPG nicht verfügbar',
+      seeFullGuide: 'Vollständigen Führer anzeigen',
+      currentAudienceTitle: 'Aktuelles Publikum',
+      totalAudienceTitle: 'Gesamtpublikum',
+      waitingUpdate: 'Auf Aktualisierung warten...',
+      shareTransmission: 'Übertragung teilen',
+      copyLink: 'Link kopieren',
+      linkCopied: 'Kopiert!',
+      copyFailed: 'Kopieren fehlgeschlagen',
+      noWidgetsEnabled: 'Keine Widgets in embed aktiviert.',
+      loadingProgramData: 'Wird geladen...',
+      epgCloseButton: 'Schließen',
+      epgTitle: '📋 Programmführer',
+      epgNoData: 'Keine Programme verfügbar.',
+      close: 'Schließen',
+      mute: 'Stumm',
+      fullscreen: 'Vollbild',
+      cast: 'An Google Cast senden',
+      playPause: 'Abspielen / Pause',
+      volume: 'Lautstärke',
+      updatedAt: 'Aktualisiert am',
+      nextProgramNotAvailable: 'Kein nächstes Programm',
+      loadingEpg: 'Wird geladen...',
+      noProgrammingAvailable: 'Keine Programmierung verfügbar.',
+      untitled: 'Ohne Titel',
+      synopsisUnavailable: 'Zusammenfassung nicht verfügbar.',
+      streamUnavailable: 'Übertragung ist im Moment nicht verfügbar.',
+      streamError: 'Fehler beim Laden des Streams.',
+      hlsNotSupported: 'Browser unterstützt HLS nicht.',
+      couldNotLoadSchedule: 'Programmführer konnte nicht geladen werden.',
+      channel: 'Kanal'
+    }
+  };
+
+  function getLang() {
+    const stored = window.localStorage.getItem(LANG_KEY);
+    const validLangs = ['pt', 'en', 'es', 'ru', 'zh', 'pl', 'it', 'de'];
+    return validLangs.includes(stored) ? stored : 'pt';
+  }
+
+  let currentLang = getLang();
+
+  function t(key) {
+    return i18n[currentLang][key] || i18n.pt[key] || key;
+  }
+
+  function locale() {
+    const localeMap = {
+      'pt': 'pt-BR',
+      'en': 'en-US',
+      'es': 'es-ES',
+      'ru': 'ru-RU',
+      'zh': 'zh-CN',
+      'pl': 'pl-PL',
+      'it': 'it-IT',
+      'de': 'de-DE'
+    };
+    return localeMap[currentLang] || 'pt-BR';
+  }
+
   const video = document.getElementById('video');
   const playerWrapper = document.getElementById('player-wrapper');
   const loading = document.getElementById('player-loading');
@@ -108,12 +482,12 @@
   function fmtTime(iso) {
     if (!iso) return '';
     const date = new Date(iso);
-    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
   }
 
   function fmtUpdatedAt(iso) {
-    if (!iso) return 'Atualizacao indisponivel';
-    return `Atualizado as ${new Date(iso).toLocaleTimeString('pt-BR', {
+    if (!iso) return t('updateUnavailable');
+    return `${t('updatedAt')} ${new Date(iso).toLocaleTimeString(locale(), {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
@@ -122,7 +496,7 @@
 
   function getSharePayload() {
     const shareUrl = new URL('/', window.location.origin).toString();
-    const shareText = 'Assista a transmissao ao vivo';
+    const shareText = t('shareTransmission');
     const encodedUrl = encodeURIComponent(shareUrl);
     const encodedText = encodeURIComponent(shareText);
     return {
@@ -138,34 +512,34 @@
     const enabledOrder = embedCustomization.order.filter((id) => isWidgetEnabled(id));
 
     if (!enabledOrder.length) {
-      widgetsContainer.innerHTML = '<div class="widget-card">Nenhum widget habilitado no embed.</div>';
+      widgetsContainer.innerHTML = `<div class="widget-card">${t('noWidgetsEnabled')}</div>`;
       return;
     }
 
     const cards = enabledOrder.map((id) => {
       if (id === 'epgButton') {
-        return `<div class="widget-card"><div class="widget-title">Grade de programacao</div><button class="widget-btn" id="widget-open-epg" ${epgEnabled ? '' : 'disabled'}>${epgEnabled ? 'Ver grade completa' : 'EPG indisponivel'}</button></div>`;
+        return `<div class="widget-card"><div class="widget-title">${t('epgButtonLabel')}</div><button class="widget-btn" id="widget-open-epg" ${epgEnabled ? '' : 'disabled'}>${epgEnabled ? t('seeFullGuide') : t('epgUnavailable')}</button></div>`;
       }
 
       if (id === 'currentProgram') {
-        return `<div class="widget-card"><div class="widget-title">Programa atual</div><div class="widget-value" id="widget-current-title">Carregando...</div><div class="widget-meta" id="widget-current-time"></div><div class="widget-meta" id="widget-current-category"></div></div>`;
+        return `<div class="widget-card"><div class="widget-title">${t('currentProgramTitle')}</div><div class="widget-value" id="widget-current-title">${t('loadingProgramData')}</div><div class="widget-meta" id="widget-current-time"></div><div class="widget-meta" id="widget-current-category"></div></div>`;
       }
 
       if (id === 'nextProgram') {
-        return `<div class="widget-card"><div class="widget-title">Proximo programa</div><div class="widget-value" id="widget-next-title">Carregando...</div><div class="widget-meta" id="widget-next-time"></div><div class="widget-meta" id="widget-next-category"></div></div>`;
+        return `<div class="widget-card"><div class="widget-title">${t('nextProgramTitle')}</div><div class="widget-value" id="widget-next-title">${t('loadingProgramData')}</div><div class="widget-meta" id="widget-next-time"></div><div class="widget-meta" id="widget-next-category"></div></div>`;
       }
 
       if (id === 'currentAudience') {
-        return `<div class="widget-card"><div class="widget-title">Audiencia atual</div><div class="widget-value" id="widget-live-viewers">0</div><div class="widget-meta" id="widget-live-updated">Aguardando atualizacao...</div></div>`;
+        return `<div class="widget-card"><div class="widget-title">${t('currentAudienceTitle')}</div><div class="widget-value" id="widget-live-viewers">0</div><div class="widget-meta" id="widget-live-updated">${t('waitingUpdate')}</div></div>`;
       }
 
       if (id === 'totalAudience') {
-        return `<div class="widget-card"><div class="widget-title">Audiencia total</div><div class="widget-value" id="widget-total-views">0</div><div class="widget-meta" id="widget-total-updated">Aguardando atualizacao...</div></div>`;
+        return `<div class="widget-card"><div class="widget-title">${t('totalAudienceTitle')}</div><div class="widget-value" id="widget-total-views">0</div><div class="widget-meta" id="widget-total-updated">${t('waitingUpdate')}</div></div>`;
       }
 
       if (id === 'shareOptions') {
         const payload = getSharePayload();
-        return `<div class="widget-card"><div class="widget-title">Compartilhar transmissao</div><div class="widget-share-actions"><a class="widget-share-btn" href="${payload.whatsapp}" target="_blank" rel="noopener">WhatsApp</a><a class="widget-share-btn" href="${payload.facebook}" target="_blank" rel="noopener">Facebook</a><a class="widget-share-btn" href="${payload.x}" target="_blank" rel="noopener">X</a><a class="widget-share-btn" href="${payload.telegram}" target="_blank" rel="noopener">Telegram</a><button class="widget-share-btn" id="widget-copy-share" type="button">Copiar link</button></div></div>`;
+        return `<div class="widget-card"><div class="widget-title">${t('shareTransmission')}</div><div class="widget-share-actions"><a class="widget-share-btn" href="${payload.whatsapp}" target="_blank" rel="noopener">WhatsApp</a><a class="widget-share-btn" href="${payload.facebook}" target="_blank" rel="noopener">Facebook</a><a class="widget-share-btn" href="${payload.x}" target="_blank" rel="noopener">X</a><a class="widget-share-btn" href="${payload.telegram}" target="_blank" rel="noopener">Telegram</a><button class="widget-share-btn" id="widget-copy-share" type="button">${t('copyLink')}</button></div></div>`;
       }
 
       return '';
@@ -184,14 +558,14 @@
         const payload = getSharePayload();
         try {
           await navigator.clipboard.writeText(payload.shareUrl);
-          copyButton.textContent = 'Copiado!';
+          copyButton.textContent = t('linkCopied');
           setTimeout(() => {
-            copyButton.textContent = 'Copiar link';
+            copyButton.textContent = t('copyLink');
           }, 1200);
         } catch (_) {
-          copyButton.textContent = 'Falha ao copiar';
+          copyButton.textContent = t('copyFailed');
           setTimeout(() => {
-            copyButton.textContent = 'Copiar link';
+            copyButton.textContent = t('copyLink');
           }, 1200);
         }
       });
@@ -271,7 +645,7 @@
     const nextCategory = document.getElementById('widget-next-category');
 
     if (currentTitle) {
-      currentTitle.textContent = decodeHtml(entry?.current?.title || 'Sem programacao');
+      currentTitle.textContent = decodeHtml(entry?.current?.title || t('noSchedule'));
     }
     if (currentTime) {
       if (entry?.current?.start && entry?.current?.stop) {
@@ -285,7 +659,7 @@
     }
 
     if (nextTitle) {
-      nextTitle.textContent = decodeHtml(entry?.next?.title || 'Sem proximo programa');
+      nextTitle.textContent = decodeHtml(entry?.next?.title || t('nextProgramNotAvailable'));
     }
     if (nextTime) {
       if (entry?.next?.start && entry?.next?.stop) {

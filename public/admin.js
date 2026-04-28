@@ -13,7 +13,6 @@
   const btnUpdate = document.getElementById('btn-update');
   const updateSection = document.getElementById('update-section');
   const updateAvailableLabel = document.getElementById('update-available-label');
-  const languageSelect = document.getElementById('admin-language-select');
   const adminBrandIcon = document.getElementById('admin-brand-icon');
 
   let currentHomeCustomization = null;
@@ -91,11 +90,229 @@
       updateDone: 'Update completed successfully.',
       loadAdminError: 'Could not load administration.',
       invalidPasswordShort: 'Invalid password.'
+    },
+    es: {
+      adminTitle: 'Administración',
+      adminKicker: 'Panel de administración',
+      languageLabel: 'Idioma',
+      menuBlocks: 'Bloqueo de Región',
+      menuChannelBlocks: 'Bloqueo de Canal',
+      menuStats: 'Estadísticas',
+      menuSettings: 'Configuración General',
+      menuPersonalization: 'Personalización de Inicio',
+      menuEmbed: 'Incrustación',
+      logout: 'Cerrar sesión',
+      update: 'Actualizar',
+      newVersionAvailable: 'Nueva versión disponible',
+      iframeTitle: 'Contenido de administración',
+      authTitle: 'Acceso administrativo',
+      authSubtitle: 'Ingrese la contraseña para acceder a la administración.',
+      authPasswordLabel: 'Contraseña',
+      authSubmit: 'Iniciar sesión',
+      viewBlocks: 'Bloqueo de Región',
+      viewChannelBlocks: 'Bloqueo de Canal',
+      viewStats: 'Estadísticas',
+      viewSettings: 'Configuración General',
+      viewPersonalization: 'Personalización de Inicio',
+      viewEmbed: 'Incrustación',
+      authStatusError: 'Error al consultar el estado de autenticación',
+      invalidPassword: 'Contraseña inválida',
+      updateCheckError: 'Error al verificar actualizaciones.',
+      updateApplyError: 'Error al aplicar la actualización.',
+      updateFound: 'Se encontró una nueva versión',
+      currentVersion: 'Versión actual',
+      askUpdateNow: '¿Desea actualizar ahora?',
+      updateDoneRestart: 'Actualización completada. La aplicación se reiniciará en breve.',
+      updateDone: 'Actualización completada con éxito.',
+      loadAdminError: 'No se pudo cargar la administración.',
+      invalidPasswordShort: 'Contraseña inválida.'
+    },
+    ru: {
+      adminTitle: 'Администрирование',
+      adminKicker: 'Панель администратора',
+      languageLabel: 'Язык',
+      menuBlocks: 'Блокировка региона',
+      menuChannelBlocks: 'Блокировка канала',
+      menuStats: 'Статистика',
+      menuSettings: 'Общие настройки',
+      menuPersonalization: 'Персонализация главной',
+      menuEmbed: 'Встраивание',
+      logout: 'Выйти',
+      update: 'Обновить',
+      newVersionAvailable: 'Доступна новая версия',
+      iframeTitle: 'Содержание администрации',
+      authTitle: 'Администраторский доступ',
+      authSubtitle: 'Введите пароль для доступа к администрации.',
+      authPasswordLabel: 'Пароль',
+      authSubmit: 'Войти',
+      viewBlocks: 'Блокировка региона',
+      viewChannelBlocks: 'Блокировка канала',
+      viewStats: 'Статистика',
+      viewSettings: 'Общие настройки',
+      viewPersonalization: 'Персонализация главной',
+      viewEmbed: 'Встраивание',
+      authStatusError: 'Ошибка при проверке статуса аутентификации',
+      invalidPassword: 'Неверный пароль',
+      updateCheckError: 'Ошибка при проверке обновлений.',
+      updateApplyError: 'Ошибка при применении обновления.',
+      updateFound: 'Найдена новая версия',
+      currentVersion: 'Текущая версия',
+      askUpdateNow: 'Хотите обновить сейчас?',
+      updateDoneRestart: 'Обновление завершено. Приложение перезагрузится в ближайшее время.',
+      updateDone: 'Обновление завершено успешно.',
+      loadAdminError: 'Не удалось загрузить администрацию.',
+      invalidPasswordShort: 'Неверный пароль.'
+    },
+    zh: {
+      adminTitle: '管理',
+      adminKicker: '管理面板',
+      languageLabel: '语言',
+      menuBlocks: '区域阻止',
+      menuChannelBlocks: '频道阻止',
+      menuStats: '统计',
+      menuSettings: '常规设置',
+      menuPersonalization: '主页个性化',
+      menuEmbed: '嵌入',
+      logout: '登出',
+      update: '更新',
+      newVersionAvailable: '有可用的新版本',
+      iframeTitle: '管理内容',
+      authTitle: '管理员访问',
+      authSubtitle: '输入密码以访问管理。',
+      authPasswordLabel: '密码',
+      authSubmit: '登录',
+      viewBlocks: '区域阻止',
+      viewChannelBlocks: '频道阻止',
+      viewStats: '统计',
+      viewSettings: '常规设置',
+      viewPersonalization: '主页个性化',
+      viewEmbed: '嵌入',
+      authStatusError: '检查身份验证状态失败',
+      invalidPassword: '密码无效',
+      updateCheckError: '检查更新失败。',
+      updateApplyError: '应用更新失败。',
+      updateFound: '找到新版本',
+      currentVersion: '当前版本',
+      askUpdateNow: '您想现在更新吗？',
+      updateDoneRestart: '更新完成。应用程序将立即重新启动。',
+      updateDone: '更新成功完成。',
+      loadAdminError: '无法加载管理。',
+      invalidPasswordShort: '密码无效。'
+    },
+    pl: {
+      adminTitle: 'Administracja',
+      adminKicker: 'Panel administracyjny',
+      languageLabel: 'Język',
+      menuBlocks: 'Blokowanie regionu',
+      menuChannelBlocks: 'Blokowanie kanału',
+      menuStats: 'Statystyki',
+      menuSettings: 'Ustawienia ogólne',
+      menuPersonalization: 'Personalizacja strony głównej',
+      menuEmbed: 'Osadzanie',
+      logout: 'Wyloguj się',
+      update: 'Aktualizuj',
+      newVersionAvailable: 'Dostępna jest nowa wersja',
+      iframeTitle: 'Zawartość administracji',
+      authTitle: 'Dostęp administracyjny',
+      authSubtitle: 'Wprowadź hasło, aby uzyskać dostęp do administracji.',
+      authPasswordLabel: 'Hasło',
+      authSubmit: 'Zaloguj się',
+      viewBlocks: 'Blokowanie regionu',
+      viewChannelBlocks: 'Blokowanie kanału',
+      viewStats: 'Statystyki',
+      viewSettings: 'Ustawienia ogólne',
+      viewPersonalization: 'Personalizacja strony głównej',
+      viewEmbed: 'Osadzanie',
+      authStatusError: 'Błąd podczas sprawdzania statusu uwierzytelnienia',
+      invalidPassword: 'Nieprawidłowe hasło',
+      updateCheckError: 'Błąd podczas sprawdzania aktualizacji.',
+      updateApplyError: 'Błąd podczas stosowania aktualizacji.',
+      updateFound: 'Znaleziono nową wersję',
+      currentVersion: 'Bieżąca wersja',
+      askUpdateNow: 'Czy chcesz teraz zaktualizować?',
+      updateDoneRestart: 'Aktualizacja zakończona. Aplikacja wkrótce się uruchomi ponownie.',
+      updateDone: 'Aktualizacja pomyślnie zakończona.',
+      loadAdminError: 'Nie można załadować administracji.',
+      invalidPasswordShort: 'Nieprawidłowe hasło.'
+    },
+    it: {
+      adminTitle: 'Amministrazione',
+      adminKicker: 'Pannello di amministrazione',
+      languageLabel: 'Lingua',
+      menuBlocks: 'Blocco regione',
+      menuChannelBlocks: 'Blocco canale',
+      menuStats: 'Statistiche',
+      menuSettings: 'Impostazioni generali',
+      menuPersonalization: 'Personalizzazione della pagina iniziale',
+      menuEmbed: 'Incorpora',
+      logout: 'Esci',
+      update: 'Aggiorna',
+      newVersionAvailable: 'È disponibile una nuova versione',
+      iframeTitle: 'Contenuto amministrativo',
+      authTitle: 'Accesso amministrativo',
+      authSubtitle: 'Immettere la password per accedere all\'amministrazione.',
+      authPasswordLabel: 'Password',
+      authSubmit: 'Accedi',
+      viewBlocks: 'Blocco regione',
+      viewChannelBlocks: 'Blocco canale',
+      viewStats: 'Statistiche',
+      viewSettings: 'Impostazioni generali',
+      viewPersonalization: 'Personalizzazione della pagina iniziale',
+      viewEmbed: 'Incorpora',
+      authStatusError: 'Errore nel controllo dello stato di autenticazione',
+      invalidPassword: 'Password non valida',
+      updateCheckError: 'Errore durante il controllo degli aggiornamenti.',
+      updateApplyError: 'Errore durante l\'applicazione dell\'aggiornamento.',
+      updateFound: 'È stata trovata una nuova versione',
+      currentVersion: 'Versione corrente',
+      askUpdateNow: 'Vuoi aggiornare ora?',
+      updateDoneRestart: 'Aggiornamento completato. L\'applicazione verrà riavviata a breve.',
+      updateDone: 'Aggiornamento completato con successo.',
+      loadAdminError: 'Impossibile caricare l\'amministrazione.',
+      invalidPasswordShort: 'Password non valida.'
+    },
+    de: {
+      adminTitle: 'Verwaltung',
+      adminKicker: 'Verwaltungsbereich',
+      languageLabel: 'Sprache',
+      menuBlocks: 'Regionsblockierung',
+      menuChannelBlocks: 'Kanalblockierung',
+      menuStats: 'Statistiken',
+      menuSettings: 'Allgemeine Einstellungen',
+      menuPersonalization: 'Startseite personalisieren',
+      menuEmbed: 'Einbettung',
+      logout: 'Abmelden',
+      update: 'Aktualisieren',
+      newVersionAvailable: 'Neue Version verfügbar',
+      iframeTitle: 'Verwaltungsinhalt',
+      authTitle: 'Administratorzugriff',
+      authSubtitle: 'Geben Sie das Passwort ein, um auf die Verwaltung zuzugreifen.',
+      authPasswordLabel: 'Passwort',
+      authSubmit: 'Anmelden',
+      viewBlocks: 'Regionsblockierung',
+      viewChannelBlocks: 'Kanalblockierung',
+      viewStats: 'Statistiken',
+      viewSettings: 'Allgemeine Einstellungen',
+      viewPersonalization: 'Startseite personalisieren',
+      viewEmbed: 'Einbettung',
+      authStatusError: 'Fehler beim Überprüfen des Authentifizierungsstatus',
+      invalidPassword: 'Ungültiges Passwort',
+      updateCheckError: 'Fehler beim Überprüfen von Aktualisierungen.',
+      updateApplyError: 'Fehler beim Anwenden der Aktualisierung.',
+      updateFound: 'Eine neue Version wurde gefunden',
+      currentVersion: 'Aktuelle Version',
+      askUpdateNow: 'Möchten Sie jetzt aktualisieren?',
+      updateDoneRestart: 'Aktualisierung abgeschlossen. Die Anwendung wird in Kürze neu gestartet.',
+      updateDone: 'Aktualisierung erfolgreich abgeschlossen.',
+      loadAdminError: 'Verwaltung konnte nicht geladen werden.',
+      invalidPasswordShort: 'Ungültiges Passwort.'
     }
   };
 
   function getLang() {
-    return window.localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'pt';
+    const lang = window.localStorage.getItem(LANG_KEY);
+    const validLangs = ['pt', 'en', 'es', 'ru', 'zh', 'pl', 'it', 'de'];
+    return validLangs.includes(lang) ? lang : 'pt';
   }
 
   let currentLang = getLang();
@@ -148,23 +365,6 @@
     if (frame) {
       frame.title = t('iframeTitle');
     }
-  }
-
-  function initLanguageControl() {
-    if (!languageSelect) return;
-    languageSelect.value = currentLang;
-    languageSelect.addEventListener('change', () => {
-      currentLang = languageSelect.value === 'en' ? 'en' : 'pt';
-      window.localStorage.setItem(LANG_KEY, currentLang);
-      applyStaticTranslations();
-      setView(getCurrentView());
-      setChannelName(channelNameEl.textContent || 'Webtv framework');
-      try {
-        frame.contentWindow?.location.reload();
-      } catch (_) {
-        // Ignora falhas ocasionais de recarregamento do iframe.
-      }
-    });
   }
 
   function getCurrentView() {
@@ -285,12 +485,11 @@
         adminBrandIcon.src = faviconUrl;
         adminBrandIcon.style.display = 'block';
         adminBrandIcon.onerror = () => {
-          adminBrandIcon.style.display = 'none';
-          adminBrandIcon.removeAttribute('src');
+          adminBrandIcon.src = '/webtvframework.ico';
         };
       } else {
-        adminBrandIcon.style.display = 'none';
-        adminBrandIcon.removeAttribute('src');
+        adminBrandIcon.src = '/webtvframework.ico';
+        adminBrandIcon.style.display = 'block';
       }
     }
   }
@@ -423,6 +622,5 @@
   });
 
   applyStaticTranslations();
-  initLanguageControl();
   boot();
 })();

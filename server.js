@@ -78,6 +78,46 @@ const HOME_THEME_PRESETS = {
     },
     fontFamily: 'Tahoma, Segoe UI, sans-serif',
   },
+  forest: {
+    colors: {
+      bg: '#0a1408',
+      surface: '#122611',
+      border: '#2d542a',
+      accent: '#4ade80',
+      text: '#e8f5e9',
+    },
+    fontFamily: 'Segoe UI, system-ui, -apple-system, sans-serif',
+  },
+  neon: {
+    colors: {
+      bg: '#0a0015',
+      surface: '#1a0033',
+      border: '#5500aa',
+      accent: '#00ff88',
+      text: '#ff00ff',
+    },
+    fontFamily: 'Courier New, monospace',
+  },
+  retro: {
+    colors: {
+      bg: '#2a1810',
+      surface: '#4a3020',
+      border: '#8b6f47',
+      accent: '#d4af37',
+      text: '#f5e6d3',
+    },
+    fontFamily: 'Georgia, Times New Roman, serif',
+  },
+  minimal: {
+    colors: {
+      bg: '#ffffff',
+      surface: '#f5f5f5',
+      border: '#e0e0e0',
+      accent: '#333333',
+      text: '#1a1a1a',
+    },
+    fontFamily: 'Segoe UI, system-ui, -apple-system, sans-serif',
+  },
 };
 const HOME_ALLOWED_FONTS = [
   'Segoe UI, system-ui, -apple-system, sans-serif',
