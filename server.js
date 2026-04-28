@@ -704,6 +704,42 @@ async function writeRegionBlocks(blocks) {
   await fs.promises.writeFile(BLOCKS_FILE, JSON.stringify(blocks, null, 2), 'utf8');
 }
 
+function normalizeRegionBlock(raw) {
+  const allowedTargets = ['site', 'stream', 'embed'];
+  const rawTargets = Array.isArray(raw?.targets) ? raw.targets : allowedTargets;
+  const normalizedTargets = rawTargets
+    .map((target) => String(target || '').trim().toLowerCase())
+    .filter((target, index, list) => allowedTargets.includes(target) && list.indexOf(target) === index);
+
+  return {
+    id: String(raw?.id || crypto.randomUUID()),
+    attraction: String(raw?.attraction || '').trim(),
+    mode: raw?.mode === 'whitelist' ? 'whitelist' : 'blacklist',
+    targets: normalizedTargets.length ? normalizedTargets : allowedTargets,
+    countries: normalizeCsvOrArray(raw?.countries),
+    states: normalizeCsvOrArray(raw?.states),
+    cities: normalizeCsvOrArray(raw?.cities),
+    reason: String(raw?.reason || '').trim(),
+    alternativeStreamUrl: sanitizeOptionalUrl(raw?.alternativeStreamUrl),
+    active: raw?.active !== false,
+    createdAt: String(raw?.createdAt || new Date().toISOString()),
+  };
+}
+
+function getRequestTarget(req, fallback = 'site') {
+  const queryTarget = String(req.query?.target || '').trim().toLowerCase();
+  if (['site', 'stream', 'embed'].includes(queryTarget)) {
+    return queryTarget;
+  }
+
+  const referer = String(req.headers.referer || '').toLowerCase();
+  if (referer.includes('/embed')) {
+    return 'embed';
+  }
+
+  return fallback;
+}
+
 function readChannelBlocks() {
   ensureDataStore();
   try {
@@ -1142,10 +1178,12 @@ function isProgrammeBlocked(programme, block, location) {
   if (!title || !attraction) return false;
   if (!title.includes(attraction)) return false;
 
-  return matchesRegion(block, location);
+  const regionMatches = matchesRegion(block, location);
+  return block.mode === 'whitelist' ? !regionMatches : regionMatches;
 }
 
-async function getGeoBlockForRequest(req) {
+async function getGeoBlockForRequest(req, options = {}) {
+  const target = ['site', 'stream', 'embed'].includes(options.target) ? options.target : 'stream';
   let channels = [];
   let programmes = [];
 
@@ -1161,15 +1199,29 @@ async function getGeoBlockForRequest(req) {
   if (!current) return null;
 
   const location = getLocationFromGeoLite(getClientIp(req));
-  const blocks = readRegionBlocks().filter(block => block.active !== false);
+  const blocks = readRegionBlocks()
+    .map((block) => normalizeRegionBlock(block))
+    .filter((block) => block.active !== false && block.targets.includes(target));
 
   const matchedBlock = blocks.find(block => isProgrammeBlocked(current, block, location));
   if (!matchedBlock) return null;
 
   const reason = String(matchedBlock.reason || '').trim() || 'não informado';
-  const message = `Programa bloqueado para a sua região, motivo: ${reason}`;
+  const blockedMessage = `Programa bloqueado para a sua região, motivo: ${reason}`;
+  const alternativeMessage = `você está assistindo a uma programação alternativa devido a bloqueio da atração principal para a sua região (motivo do bloqueio: ${reason})`;
+  const hasAlternativeStream = Boolean(matchedBlock.alternativeStreamUrl);
 
-  return { message, programme: current, block: matchedBlock, location };
+  return {
+    blocked: !hasAlternativeStream,
+    hasAlternativeStream,
+    alternativeStreamUrl: matchedBlock.alternativeStreamUrl || '',
+    blockedMessage,
+    alternativeMessage,
+    reason,
+    programme: current,
+    block: matchedBlock,
+    location,
+  };
 }
 
 function getCurrentProgramTitle() {
@@ -1634,14 +1686,15 @@ app.get('/stream/playlist.m3u8', async (req, res) => {
       return;
     }
 
-    const geoBlock = await getGeoBlockForRequest(req);
-    if (geoBlock) {
-      sendNoticeAsPlaylist(res, geoBlock.message);
+    const geoBlock = await getGeoBlockForRequest(req, { target: 'stream' });
+    if (geoBlock && geoBlock.blocked) {
+      sendNoticeAsPlaylist(res, geoBlock.blockedMessage);
       return;
     }
 
     const { streamUrl } = getGeneralRuntimeConfig();
-    const upstream = await axios.get(streamUrl, { responseType: 'text', timeout: 10000 });
+    const sourceStreamUrl = geoBlock?.hasAlternativeStream ? geoBlock.alternativeStreamUrl : streamUrl;
+    const upstream = await axios.get(sourceStreamUrl, { responseType: 'text', timeout: 10000 });
     let content = upstream.data;
 
     // Reescreve linhas que são segmentos .ts ou sub-playlists .m3u8
@@ -1656,7 +1709,7 @@ app.get('/stream/playlist.m3u8', async (req, res) => {
         absoluteUrl = `${UPSTREAM_BASE}${trimmed}`;
       } else {
         // URL relativa — resolve a partir do diretório do m3u8
-        const base = streamUrl.split('?')[0].replace(/\/[^/]+$/, '/');
+        const base = sourceStreamUrl.split('?')[0].replace(/\/[^/]+$/, '/');
         absoluteUrl = base + trimmed;
       }
 
@@ -1665,6 +1718,12 @@ app.get('/stream/playlist.m3u8', async (req, res) => {
       }
       return `/stream/seg?url=${encodeURIComponent(absoluteUrl)}`;
     }).join('\n');
+
+    if (geoBlock?.hasAlternativeStream && geoBlock.alternativeMessage) {
+      const message = sanitizeM3uMessage(geoBlock.alternativeMessage);
+      content = content
+        .replace(/^#EXTM3U\s*/m, '#EXTM3U\n# TVSABINOS-ALTERNATIVE-NOTICE: ' + message + '\n');
+    }
 
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
     res.setHeader('Cache-Control', 'no-cache');
@@ -1754,8 +1813,9 @@ app.get('/epg/xmltv.xml', async (req, res) => {
   }
 });
 
-app.get('/api/public-config', (req, res) => {
+app.get('/api/public-config', async (req, res) => {
   const runtimeConfig = getGeneralRuntimeConfig();
+  const regionRule = await getGeoBlockForRequest(req, { target: getRequestTarget(req, 'site') });
   res.setHeader('Cache-Control', 'no-store');
   res.json({
     channelName: runtimeConfig.channelName,
@@ -1764,6 +1824,8 @@ app.get('/api/public-config', (req, res) => {
     epgEnabled: Boolean(runtimeConfig.epgUrl),
     homeCustomization: runtimeConfig.homeCustomization,
     embedCustomization: runtimeConfig.embedCustomization,
+    alternativeProgrammingActive: Boolean(regionRule?.hasAlternativeStream),
+    alternativeProgrammingMessage: regionRule?.hasAlternativeStream ? regionRule.alternativeMessage : '',
     streamStateVersion,
   });
 });
@@ -2291,16 +2353,32 @@ app.get('/api/epg/channels', async (req, res) => {
 // ── Rotas: Bloqueio regional ────────────────────────────────────────────────
 
 // ── Rotas: Verificação de acesso ao canal ────────────────────────────────────
-app.get('/api/access-check', (req, res) => {
+app.get('/api/access-check', async (req, res) => {
   const target = String(req.query.target || 'site').toLowerCase();
   if (!['site', 'stream', 'embed'].includes(target)) {
     return res.status(400).json({ error: 'Target inválido. Use site, stream ou embed.' });
   }
+
   const ip = getClientIp(req);
-  const result = checkChannelAccess(ip, target);
-  if (result) {
-    return res.json({ blocked: true, reason: result.reason, message: result.message, target });
+  const channelResult = checkChannelAccess(ip, target);
+  if (channelResult) {
+    return res.json({ blocked: true, reason: channelResult.reason, message: channelResult.message, target });
   }
+
+  const regionRule = await getGeoBlockForRequest(req, { target });
+  if (regionRule?.blocked) {
+    return res.json({ blocked: true, reason: regionRule.reason, message: regionRule.blockedMessage, target });
+  }
+  if (regionRule?.hasAlternativeStream) {
+    return res.json({
+      blocked: false,
+      target,
+      alternativeProgrammingActive: true,
+      alternativeProgrammingMessage: regionRule.alternativeMessage,
+      reason: regionRule.reason,
+    });
+  }
+
   return res.json({ blocked: false, target });
 });
 
@@ -2383,7 +2461,7 @@ app.delete('/api/channel-blocks/:id', requireAdminAuth, async (req, res) => {
 // ────────────────────────────────────────────────────────────────────────────
 
 app.get('/api/blocks', requireAdminAuth, (req, res) => {
-  res.json(readRegionBlocks());
+  res.json(readRegionBlocks().map((block) => normalizeRegionBlock(block)));
 });
 
 app.post('/api/blocks', requireAdminAuth, async (req, res) => {
@@ -2392,13 +2470,26 @@ app.post('/api/blocks', requireAdminAuth, async (req, res) => {
     return res.status(400).json({ error: 'O campo attraction é obrigatório.' });
   }
 
+  const mode = String(req.body?.mode || 'blacklist').trim();
+  if (!['blacklist', 'whitelist'].includes(mode)) {
+    return res.status(400).json({ error: 'mode deve ser blacklist ou whitelist.' });
+  }
+
+  const alternativeStreamUrl = sanitizeOptionalUrl(req.body?.alternativeStreamUrl);
+  if (String(req.body?.alternativeStreamUrl || '').trim() && !alternativeStreamUrl) {
+    return res.status(400).json({ error: 'alternativeStreamUrl invalida. Use URL http(s) valida.' });
+  }
+
   const block = {
     id: crypto.randomUUID(),
     attraction,
+    mode,
+    targets: ['site', 'stream', 'embed'],
     countries: normalizeCsvOrArray(req.body?.countries),
     states: normalizeCsvOrArray(req.body?.states),
     cities: normalizeCsvOrArray(req.body?.cities),
     reason: String(req.body?.reason || '').trim(),
+    alternativeStreamUrl,
     active: req.body?.active !== false,
     createdAt: new Date().toISOString(),
   };

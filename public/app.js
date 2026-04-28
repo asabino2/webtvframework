@@ -28,6 +28,7 @@
   const appAuthorLine = document.getElementById('app-author-line');
   const shareSection = document.getElementById('share-section');
   const shareTitle = document.getElementById('share-title');
+  const altProgramNotice = document.getElementById('alt-program-notice');
   const shareWhatsapp = document.getElementById('share-whatsapp');
   const shareFacebook = document.getElementById('share-facebook');
   const shareX = document.getElementById('share-x');
@@ -622,6 +623,7 @@
   let channelName = 'Webtv framework';
   let appVersion = '0.0.2';
   let faviconUrl = '/webtvframework.ico';
+  let alternativeProgrammingMessage = '';
   let streamStateVersion = 0;
   let epgEnabled = true;
   let homeCustomization = null;
@@ -722,6 +724,18 @@
   function updateShareVisibility() {
     if (!shareSection) return;
     setDisplay(shareSection, isShareEnabled() ? 'block' : 'none');
+  }
+
+  function updateAlternativeProgrammingNotice() {
+    if (!altProgramNotice) return;
+    if (alternativeProgrammingMessage) {
+      altProgramNotice.textContent = alternativeProgrammingMessage;
+      altProgramNotice.style.display = 'block';
+      return;
+    }
+
+    altProgramNotice.textContent = '';
+    altProgramNotice.style.display = 'none';
   }
 
   function isVisible(element) {
@@ -1046,6 +1060,7 @@
     updateDocumentTitle();
     updateShareLinks();
     updateShareVisibility();
+    updateAlternativeProgrammingNotice();
   }
 
   async function loadPublicConfig(options = {}) {
@@ -1065,6 +1080,9 @@
       if (data?.homeCustomization) {
         applyHomeCustomization(data.homeCustomization);
       }
+      alternativeProgrammingMessage = data?.alternativeProgrammingActive
+        ? String(data.alternativeProgrammingMessage || '').trim()
+        : '';
 
       updateDocumentTitle();
       if (logoChannelName) {
@@ -1077,6 +1095,7 @@
       applyBrandIcon(faviconUrl);
       applyEpgVisibility();
       updateShareLinks();
+      updateAlternativeProgrammingNotice();
 
       return data;
     } catch (_) {
@@ -1747,7 +1766,15 @@
       const response = await fetch('/api/access-check?target=site', { cache: 'no-store' });
       if (!response.ok) return false;
       const data = await response.json();
+
+      if (data?.alternativeProgrammingActive) {
+        alternativeProgrammingMessage = String(data.alternativeProgrammingMessage || '').trim();
+        updateAlternativeProgrammingNotice();
+      }
+
       if (data && data.blocked) {
+        alternativeProgrammingMessage = '';
+        updateAlternativeProgrammingNotice();
         showLoading(false);
         showError(true, data.message || 'Canal bloqueado para a sua regiao.');
         return true;

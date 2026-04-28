@@ -385,6 +385,7 @@
   const volRange = document.getElementById('volume-range');
   const btnCast = document.getElementById('btn-cast');
   const btnFS = document.getElementById('btn-fullscreen');
+  const altProgramNotice = document.getElementById('alt-program-notice-embed');
   const widgetsContainer = document.getElementById('embed-widgets');
   const epgOverlay = document.getElementById('embed-epg-overlay');
   const epgBody = document.getElementById('embed-epg-body');
@@ -410,6 +411,7 @@
   let streamStatePollTimer = null;
   let streamStateChannel = null;
   let streamStateVersion = 0;
+  let alternativeProgrammingMessage = '';
   let widgetPollers = [];
   let epgEnabled = true;
   let embedCustomization = { ...DEFAULT_EMBED_CUSTOMIZATION };
@@ -432,6 +434,18 @@
   function showError(show, msg = '') {
     errorBox.style.display = show ? 'flex' : 'none';
     if (msg) errorMsg.textContent = msg;
+  }
+
+  function updateAlternativeProgrammingNotice() {
+    if (!altProgramNotice) return;
+    if (alternativeProgrammingMessage) {
+      altProgramNotice.textContent = alternativeProgrammingMessage;
+      altProgramNotice.style.display = 'block';
+      return;
+    }
+
+    altProgramNotice.textContent = '';
+    altProgramNotice.style.display = 'none';
   }
 
   function sanitizeEmbedCustomization(raw) {
@@ -461,6 +475,10 @@
     }
 
     epgEnabled = Boolean(data?.epgEnabled);
+    alternativeProgrammingMessage = data?.alternativeProgrammingActive
+      ? String(data.alternativeProgrammingMessage || '').trim()
+      : '';
+    updateAlternativeProgrammingNotice();
     const nextCustomization = sanitizeEmbedCustomization(data?.embedCustomization || DEFAULT_EMBED_CUSTOMIZATION);
     const nextSignature = JSON.stringify({ epgEnabled, nextCustomization });
 
@@ -1007,7 +1025,13 @@
       const response = await fetch('/api/access-check?target=embed', { cache: 'no-store' });
       if (!response.ok) return false;
       const data = await response.json();
+      if (data?.alternativeProgrammingActive) {
+        alternativeProgrammingMessage = String(data.alternativeProgrammingMessage || '').trim();
+        updateAlternativeProgrammingNotice();
+      }
       if (data && data.blocked) {
+        alternativeProgrammingMessage = '';
+        updateAlternativeProgrammingNotice();
         showLoading(false);
         showError(true, data.message || 'Canal bloqueado para a sua regiao.');
         return true;

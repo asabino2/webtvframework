@@ -46,6 +46,22 @@
       background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.66));
     }
 
+    .alt-program-notice-embed {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 60px;
+      z-index: 6;
+      border: 1px solid rgba(255, 202, 40, 0.38);
+      border-radius: 10px;
+      background: rgba(10, 14, 22, 0.86);
+      color: #ffefc2;
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.26);
+    }
+
     .ctrl-bar {
       display: flex;
       align-items: center;
@@ -317,6 +333,8 @@
       <div class="player-error" id="player-error" style="display:none">
         <p id="error-msg">Sinal indisponivel no momento.</p>
       </div>
+
+      <div class="alt-program-notice-embed" id="alt-program-notice-embed" style="display:none"></div>
     </section>
 
     <aside class="embed-widgets" id="embed-widgets"></aside>

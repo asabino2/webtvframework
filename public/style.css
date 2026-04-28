@@ -189,6 +189,17 @@ html, body {
   padding: 14px;
 }
 
+.alt-program-notice {
+  margin-top: 12px;
+  border: 1px solid rgba(255, 202, 40, 0.35);
+  border-radius: var(--radius);
+  background: rgba(255, 202, 40, 0.12);
+  color: var(--text);
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .share-title {
   margin: 0 0 10px;
   color: var(--text-muted);

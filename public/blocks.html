@@ -55,7 +55,8 @@
     }
 
     .field input,
-    .field textarea {
+    .field textarea,
+    .field select {
       background: rgba(0, 0, 0, 0.28);
       border: 1px solid rgba(255, 255, 255, 0.16);
       border-radius: 10px;
@@ -63,6 +64,11 @@
       padding: 10px 12px;
       font: inherit;
       width: 100%;
+    }
+
+    .field select option {
+      background: #1a1a2e;
+      color: #fff;
     }
 
     .field textarea {
@@ -106,6 +112,27 @@
       font-size: 0.85rem;
     }
 
+    .badge-mode {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-blacklist {
+      background: rgba(255, 72, 72, 0.18);
+      color: #ff9a9a;
+      border: 1px solid rgba(255, 72, 72, 0.35);
+    }
+
+    .badge-whitelist {
+      background: rgba(72, 200, 120, 0.18);
+      color: #7eedb0;
+      border: 1px solid rgba(72, 200, 120, 0.35);
+    }
+
     .muted {
       color: rgba(255, 255, 255, 0.7);
       font-size: 0.86rem;
@@ -140,6 +167,14 @@
     <section class="blocks-card">
       <form id="block-form" class="blocks-form">
         <div class="field full">
+          <label for="mode" id="label-mode">Modo de bloqueio</label>
+          <select id="mode" name="mode" required>
+            <option value="blacklist" id="opt-blacklist">Lista negra (bloquear regioes listadas)</option>
+            <option value="whitelist" id="opt-whitelist">Lista branca (permitir somente regioes listadas)</option>
+          </select>
+        </div>
+
+        <div class="field full">
           <label for="attraction" id="label-attraction">Atracao (trecho do titulo no EPG)</label>
           <input id="attraction" name="attraction" type="text" required placeholder="Ex.: Campeonato" />
         </div>
@@ -164,6 +199,12 @@
           <textarea id="reason" name="reason" placeholder="Ex.: restrição de direitos de transmissão"></textarea>
         </div>
 
+        <div class="field full">
+          <label for="alternative-stream-url" id="label-alt-stream-url">URL de stream alternativo (opcional)</label>
+          <input id="alternative-stream-url" name="alternativeStreamUrl" type="url" placeholder="https://exemplo.com/alternativo/playlist.m3u8" />
+          <p class="muted" id="alt-stream-help">Se preenchida, durante o bloqueio por atracao sera exibido este stream alternativo em vez de bloquear a reproducao.</p>
+        </div>
+
         <div class="full">
           <button class="btn-primary" type="submit" id="btn-save-block">Salvar bloqueio</button>
         </div>
@@ -176,6 +217,7 @@
       <table class="blocks-table" id="blocks-table" style="display:none">
         <thead>
           <tr>
+            <th id="th-mode">Modo</th>
             <th id="th-attraction">Atracao</th>
             <th id="th-region">Regiao</th>
             <th id="th-reason">Motivo</th>

@@ -12,6 +12,9 @@
       title: 'Bloqueios Regionais',
       blocksTitle: 'Bloqueios Regionais de Atracoes',
       blocksSubtitle: 'Defina regras para impedir a transmissao conforme pais, estado e cidade da audiencia.',
+      labelMode: 'Modo de bloqueio',
+      optBlacklist: 'Lista negra (bloquear regioes listadas)',
+      optWhitelist: 'Lista branca (permitir somente regioes listadas)',
       labelAttraction: 'Atracao (trecho do titulo no EPG)',
       phAttraction: 'Ex.: Campeonato',
       labelCountries: 'Paises (separados por virgula)',
@@ -22,8 +25,12 @@
       phCities: 'Ex.: campinas, sorocaba',
       labelReason: 'Motivo (opcional)',
       phReason: 'Ex.: restricao de direitos de transmissao',
+      labelAltStreamUrl: 'URL de stream alternativo (opcional)',
+      phAltStreamUrl: 'https://exemplo.com/alternativo/playlist.m3u8',
+      altStreamHelp: 'Se preenchida, durante o bloqueio por atracao sera exibido este stream alternativo em vez de bloquear a reproducao.',
       saveBlock: 'Salvar bloqueio',
       blocksListTitle: 'Bloqueios cadastrados',
+      thMode: 'Modo',
       thAttraction: 'Atracao',
       thRegion: 'Regiao',
       thReason: 'Motivo',
@@ -33,6 +40,9 @@
       state: 'Estado',
       city: 'Cidade',
       global: 'Global',
+      blacklist: 'Lista negra',
+      whitelist: 'Lista branca',
+      altStreamLabel: 'Stream alternativo',
       delete: 'Excluir',
       saveError: 'Nao foi possivel salvar o bloqueio.',
       deleteConfirm: 'Deseja excluir este bloqueio?',
@@ -43,6 +53,9 @@
       title: 'Regional Blocking',
       blocksTitle: 'Regional Program Blocking',
       blocksSubtitle: 'Define rules to block broadcasts by audience country, state and city.',
+      labelMode: 'Blocking mode',
+      optBlacklist: 'Blacklist (block listed regions)',
+      optWhitelist: 'Whitelist (allow only listed regions)',
       labelAttraction: 'Program (title snippet from EPG)',
       phAttraction: 'E.g.: Championship',
       labelCountries: 'Countries (comma separated)',
@@ -53,8 +66,12 @@
       phCities: 'E.g.: new york, miami',
       labelReason: 'Reason (optional)',
       phReason: 'E.g.: broadcasting rights restriction',
+      labelAltStreamUrl: 'Alternative stream URL (optional)',
+      phAltStreamUrl: 'https://example.com/alternative/playlist.m3u8',
+      altStreamHelp: 'If filled, this alternative stream is shown during program blocking instead of fully blocking playback.',
       saveBlock: 'Save block',
       blocksListTitle: 'Registered blocks',
+      thMode: 'Mode',
       thAttraction: 'Program',
       thRegion: 'Region',
       thReason: 'Reason',
@@ -64,6 +81,9 @@
       state: 'State',
       city: 'City',
       global: 'Global',
+      blacklist: 'Blacklist',
+      whitelist: 'Whitelist',
+      altStreamLabel: 'Alternative stream',
       delete: 'Delete',
       saveError: 'Could not save the block.',
       deleteConfirm: 'Do you want to delete this block?',
@@ -291,13 +311,19 @@
 
     setText('blocks-title', t('blocksTitle'));
     setText('blocks-subtitle', t('blocksSubtitle'));
+    setText('label-mode', t('labelMode'));
+    setText('opt-blacklist', t('optBlacklist'));
+    setText('opt-whitelist', t('optWhitelist'));
     setText('label-attraction', t('labelAttraction'));
     setText('label-countries', t('labelCountries'));
     setText('label-states', t('labelStates'));
     setText('label-cities', t('labelCities'));
     setText('label-reason', t('labelReason'));
+    setText('label-alt-stream-url', t('labelAltStreamUrl'));
+    setText('alt-stream-help', t('altStreamHelp'));
     setText('btn-save-block', t('saveBlock'));
     setText('blocks-list-title', t('blocksListTitle'));
+    setText('th-mode', t('thMode'));
     setText('th-attraction', t('thAttraction'));
     setText('th-region', t('thRegion'));
     setText('th-reason', t('thReason'));
@@ -309,6 +335,7 @@
     form.states.placeholder = t('phStates');
     form.cities.placeholder = t('phCities');
     form.reason.placeholder = t('phReason');
+    form.alternativeStreamUrl.placeholder = t('phAltStreamUrl');
   }
 
   async function applyChannelName() {
@@ -366,27 +393,38 @@
     empty.style.display = 'none';
     table.style.display = 'table';
 
-    body.innerHTML = blocks.map(block => `
-      <tr>
-        <td>${esc(block.attraction)}</td>
-        <td>${esc(prettyRegion(block))}</td>
-        <td>${esc(block.reason || '-')}</td>
-        <td>
-          <button class="btn-danger" data-id="${esc(block.id)}">${esc(t('delete'))}</button>
-        </td>
-      </tr>
-    `).join('');
+    body.innerHTML = blocks.map((block) => {
+      const mode = block.mode === 'whitelist' ? 'whitelist' : 'blacklist';
+      const modeLabel = mode === 'whitelist' ? t('whitelist') : t('blacklist');
+      const altStreamLine = block.alternativeStreamUrl
+        ? `<div class="muted">${esc(t('altStreamLabel'))}: ${esc(block.alternativeStreamUrl)}</div>`
+        : '';
+
+      return `
+        <tr>
+          <td><span class="badge-mode badge-${esc(mode)}">${esc(modeLabel)}</span></td>
+          <td>${esc(block.attraction)}</td>
+          <td>${esc(prettyRegion(block))}</td>
+          <td>${esc(block.reason || '-')}${altStreamLine}</td>
+          <td>
+            <button class="btn-danger" data-id="${esc(block.id)}">${esc(t('delete'))}</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     const payload = {
+      mode: form.mode.value,
       attraction: form.attraction.value,
       countries: form.countries.value,
       states: form.states.value,
       cities: form.cities.value,
       reason: form.reason.value,
+      alternativeStreamUrl: form.alternativeStreamUrl.value,
     };
 
     const response = await fetch('/api/blocks', {

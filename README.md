@@ -6,12 +6,12 @@ Interface web para streaming ao vivo com EPG, analytics, embed e painel administ
 
 </div>
 
-[![Version](https://img.shields.io/badge/version-2.1.5-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
+[![Version](https://img.shields.io/badge/version-2.2.0-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 [![Node.js](https://img.shields.io/badge/node.js-18%2B-339933?logo=nodedotjs&logoColor=white&style=for-the-badge)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/status-active-2ea44f?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 
-Versão atual: **2.1.5**
+Versão atual: **2.2.0**
 
 ## 📺 Visão geral
 
@@ -149,6 +149,14 @@ webtvframework/
 - Personalização de tema, fonte, cores e controles do player
 
 ## 📝 Changelog recente
+
+### 2.2.0
+
+- Bloqueio regional por atração agora suporta modos de **lista negra** e **lista branca**, alinhado ao bloqueio de canal
+- Nova opção de **URL de stream alternativo** no bloqueio por atração
+- Quando a URL alternativa está configurada e a atração está bloqueada para a região do usuário, o sistema exibe o stream alternativo em vez de bloquear a reprodução
+- Mensagem de programação alternativa adicionada na **página inicial** (abaixo do player) e no **embed** (abaixo da área do player), incluindo o motivo do bloqueio
+- Verificação de acesso e respostas públicas ajustadas para informar quando a programação alternativa está ativa
 
 ### 2.1.5
 
