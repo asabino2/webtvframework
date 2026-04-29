@@ -1,4 +1,9 @@
 FROM node:20-alpine
+LABEL org.opencontainers.image.title="WebTVFramework" \
+      org.opencontainers.image.description="A web-based TV framework for streaming and managing media content." \
+      org.opencontainers.image.url="https://github.com/asabino2/webtvframework" \
+      org.opencontainers.image.version="2.2.1" \
+      org.opencontainers.image.licenses="MIT"
 
 RUN apk add --no-cache git
 
