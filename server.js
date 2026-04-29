@@ -719,8 +719,30 @@ function normalizeRegionBlock(raw) {
     countries: normalizeCsvOrArray(raw?.countries),
     states: normalizeCsvOrArray(raw?.states),
     cities: normalizeCsvOrArray(raw?.cities),
+    referrers: normalizeCsvOrArray(raw?.referrers),
     reason: String(raw?.reason || '').trim(),
     alternativeStreamUrl: sanitizeOptionalUrl(raw?.alternativeStreamUrl),
+    active: raw?.active !== false,
+    createdAt: String(raw?.createdAt || new Date().toISOString()),
+  };
+}
+
+function normalizeChannelBlock(raw) {
+  const allowedTargets = ['site', 'stream', 'embed'];
+  const rawTargets = Array.isArray(raw?.targets) ? raw.targets : allowedTargets;
+  const normalizedTargets = rawTargets
+    .map((target) => String(target || '').trim().toLowerCase())
+    .filter((target, index, list) => allowedTargets.includes(target) && list.indexOf(target) === index);
+
+  return {
+    id: String(raw?.id || crypto.randomUUID()),
+    mode: raw?.mode === 'whitelist' ? 'whitelist' : 'blacklist',
+    targets: normalizedTargets.length ? normalizedTargets : allowedTargets,
+    countries: normalizeCsvOrArray(raw?.countries),
+    states: normalizeCsvOrArray(raw?.states),
+    cities: normalizeCsvOrArray(raw?.cities),
+    referrers: normalizeCsvOrArray(raw?.referrers),
+    reason: String(raw?.reason || '').trim(),
     active: raw?.active !== false,
     createdAt: String(raw?.createdAt || new Date().toISOString()),
   };
@@ -755,6 +777,13 @@ async function writeChannelBlocks(blocks) {
   await fs.promises.writeFile(CHANNEL_BLOCKS_FILE, JSON.stringify(blocks, null, 2), 'utf8');
 }
 
+function matchesReferrer(block, referrer) {
+  if (!Array.isArray(block.referrers) || !block.referrers.length) return true;
+  const norm = normalizeText(referrer || '');
+  if (!norm) return false;
+  return block.referrers.some((r) => norm.includes(r));
+}
+
 function matchesChannelRegion(block, country, state, city) {
   const c = normalizeText(country);
   const s = normalizeText(state);
@@ -772,7 +801,7 @@ function matchesChannelRegion(block, country, state, city) {
   return true;
 }
 
-function checkChannelAccess(ip, target) {
+function checkChannelAccess(ip, target, referrer) {
   const blocks = readChannelBlocks().filter(
     (b) => b.active !== false && Array.isArray(b.targets) && b.targets.includes(target)
   );
@@ -784,7 +813,9 @@ function checkChannelAccess(ip, target) {
   const city = location.city;
 
   for (const block of blocks) {
-    const matches = matchesChannelRegion(block, country, state, city);
+    const regionMatches = matchesChannelRegion(block, country, state, city);
+    const refMatches = matchesReferrer(block, referrer);
+    const matches = regionMatches && refMatches;
     const isBlocked = block.mode === 'whitelist' ? !matches : matches;
     if (isBlocked) {
       const reason = String(block.reason || '').trim() || 'não informado';
@@ -998,6 +1029,34 @@ function normalizeCsvOrArray(value) {
     .filter(Boolean);
 }
 
+function toAutocompleteReferrer(rawReferrer) {
+  const raw = String(rawReferrer || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    return parsed.hostname.replace(/^www\./i, '').trim().toLowerCase();
+  } catch {
+    return raw
+      .replace(/^https?:\/\//i, '')
+      .split('/')[0]
+      .replace(/^www\./i, '')
+      .trim()
+      .toLowerCase();
+  }
+}
+
+function collectAutocompleteValues(values, limit = 200) {
+  const unique = new Set();
+  for (const value of values) {
+    const normalized = String(value || '').trim();
+    if (!normalized) continue;
+    if (normalized.toLowerCase() === 'desconhecido') continue;
+    unique.add(normalized);
+    if (unique.size >= limit) break;
+  }
+  return Array.from(unique).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+}
+
 function getLocalAppVersion() {
   try {
     const filePath = path.join(__dirname, 'package.json');
@@ -1172,14 +1231,16 @@ function matchesRegion(block, location) {
   return true;
 }
 
-function isProgrammeBlocked(programme, block, location) {
+function isProgrammeBlocked(programme, block, location, referrer) {
   const title = normalizeText(programme?.title);
   const attraction = normalizeText(block?.attraction);
   if (!title || !attraction) return false;
   if (!title.includes(attraction)) return false;
 
   const regionMatches = matchesRegion(block, location);
-  return block.mode === 'whitelist' ? !regionMatches : regionMatches;
+  const refMatches = matchesReferrer(block, referrer);
+  const matches = regionMatches && refMatches;
+  return block.mode === 'whitelist' ? !matches : matches;
 }
 
 async function getGeoBlockForRequest(req, options = {}) {
@@ -1199,11 +1260,12 @@ async function getGeoBlockForRequest(req, options = {}) {
   if (!current) return null;
 
   const location = getLocationFromGeoLite(getClientIp(req));
+  const referrer = String(req.headers.referer || '').trim();
   const blocks = readRegionBlocks()
     .map((block) => normalizeRegionBlock(block))
     .filter((block) => block.active !== false && block.targets.includes(target));
 
-  const matchedBlock = blocks.find(block => isProgrammeBlocked(current, block, location));
+  const matchedBlock = blocks.find(block => isProgrammeBlocked(current, block, location, referrer));
   if (!matchedBlock) return null;
 
   const reason = String(matchedBlock.reason || '').trim() || 'não informado';
@@ -2360,7 +2422,8 @@ app.get('/api/access-check', async (req, res) => {
   }
 
   const ip = getClientIp(req);
-  const channelResult = checkChannelAccess(ip, target);
+  const referrer = String(req.headers.referer || req.query.referrer || '').trim();
+  const channelResult = checkChannelAccess(ip, target, referrer);
   if (channelResult) {
     return res.json({ blocked: true, reason: channelResult.reason, message: channelResult.message, target });
   }
@@ -2382,9 +2445,56 @@ app.get('/api/access-check', async (req, res) => {
   return res.json({ blocked: false, target });
 });
 
+app.get('/api/admin/block-autocomplete', requireAdminAuth, async (req, res) => {
+  const visits = await readVisits();
+  const regionBlocks = readRegionBlocks().map((block) => normalizeRegionBlock(block));
+  const channelBlocks = readChannelBlocks().map((block) => normalizeChannelBlock(block));
+
+  const countries = collectAutocompleteValues([
+    ...visits.map((visit) => visit.country),
+    ...regionBlocks.flatMap((block) => block.countries || []),
+    ...channelBlocks.flatMap((block) => block.countries || []),
+  ]);
+
+  const states = collectAutocompleteValues([
+    ...visits.map((visit) => visit.state),
+    ...regionBlocks.flatMap((block) => block.states || []),
+    ...channelBlocks.flatMap((block) => block.states || []),
+  ]);
+
+  const cities = collectAutocompleteValues([
+    ...visits.map((visit) => visit.city),
+    ...regionBlocks.flatMap((block) => block.cities || []),
+    ...channelBlocks.flatMap((block) => block.cities || []),
+  ]);
+
+  const referrers = collectAutocompleteValues([
+    ...visits.map((visit) => toAutocompleteReferrer(visit.referrer)),
+    ...regionBlocks.flatMap((block) => (block.referrers || []).map((ref) => toAutocompleteReferrer(ref))),
+    ...channelBlocks.flatMap((block) => (block.referrers || []).map((ref) => toAutocompleteReferrer(ref))),
+  ]);
+
+  let attractions = collectAutocompleteValues([
+    ...regionBlocks.map((block) => block.attraction),
+    ...visits.map((visit) => visit.currentProgram),
+  ], 400);
+
+  try {
+    const epg = await fetchEpg();
+    const epgTitles = Array.isArray(epg?.programmes)
+      ? epg.programmes.map((programme) => String(programme?.title || '').trim())
+      : [];
+    attractions = collectAutocompleteValues([...attractions, ...epgTitles], 400);
+  } catch {
+    // EPG pode não estar disponível; sugestões de atrações continuam vindas de dados locais.
+  }
+
+  res.json({ countries, states, cities, referrers, attractions });
+});
+
 // ── Rotas: Bloqueios de canal (independente de atração) ──────────────────────
 app.get('/api/channel-blocks', requireAdminAuth, (req, res) => {
-  res.json(readChannelBlocks());
+  res.json(readChannelBlocks().map((block) => normalizeChannelBlock(block)));
 });
 
 app.post('/api/channel-blocks', requireAdminAuth, async (req, res) => {
@@ -2406,6 +2516,7 @@ app.post('/api/channel-blocks', requireAdminAuth, async (req, res) => {
     countries: normalizeCsvOrArray(req.body?.countries),
     states: normalizeCsvOrArray(req.body?.states),
     cities: normalizeCsvOrArray(req.body?.cities),
+    referrers: normalizeCsvOrArray(req.body?.referrers),
     reason: String(req.body?.reason || '').trim(),
     active: req.body?.active !== false,
     createdAt: new Date().toISOString(),
@@ -2418,7 +2529,7 @@ app.post('/api/channel-blocks', requireAdminAuth, async (req, res) => {
 });
 
 app.patch('/api/channel-blocks/:id', requireAdminAuth, async (req, res) => {
-  const blocks = readChannelBlocks();
+  const blocks = readChannelBlocks().map((block) => normalizeChannelBlock(block));
   const index = blocks.findIndex((b) => b.id === req.params.id);
   if (index === -1) {
     return res.status(404).json({ error: 'Bloqueio não encontrado.' });
@@ -2440,6 +2551,7 @@ app.patch('/api/channel-blocks/:id', requireAdminAuth, async (req, res) => {
     countries: req.body?.countries !== undefined ? normalizeCsvOrArray(req.body.countries) : existing.countries,
     states: req.body?.states !== undefined ? normalizeCsvOrArray(req.body.states) : existing.states,
     cities: req.body?.cities !== undefined ? normalizeCsvOrArray(req.body.cities) : existing.cities,
+    referrers: req.body?.referrers !== undefined ? normalizeCsvOrArray(req.body.referrers) : (existing.referrers || []),
     reason: req.body?.reason !== undefined ? String(req.body.reason || '').trim() : existing.reason,
     active: req.body?.active !== undefined ? req.body.active !== false : existing.active,
   };
@@ -2488,6 +2600,7 @@ app.post('/api/blocks', requireAdminAuth, async (req, res) => {
     countries: normalizeCsvOrArray(req.body?.countries),
     states: normalizeCsvOrArray(req.body?.states),
     cities: normalizeCsvOrArray(req.body?.cities),
+    referrers: normalizeCsvOrArray(req.body?.referrers),
     reason: String(req.body?.reason || '').trim(),
     alternativeStreamUrl,
     active: req.body?.active !== false,

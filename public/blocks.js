@@ -25,6 +25,9 @@
       phCities: 'Ex.: campinas, sorocaba',
       labelReason: 'Motivo (opcional)',
       phReason: 'Ex.: restricao de direitos de transmissao',
+      labelReferrers: 'Referrers (domínios, separados por vírgula)',
+      phReferrers: 'Ex.: facebook.com, twitter.com',
+      referrersHelp: 'Se preenchido, o bloqueio também considera o referrer HTTP da requisição.',
       labelAltStreamUrl: 'URL de stream alternativo (opcional)',
       phAltStreamUrl: 'https://exemplo.com/alternativo/playlist.m3u8',
       altStreamHelp: 'Se preenchida, durante o bloqueio por atracao sera exibido este stream alternativo em vez de bloquear a reproducao.',
@@ -66,6 +69,9 @@
       phCities: 'E.g.: new york, miami',
       labelReason: 'Reason (optional)',
       phReason: 'E.g.: broadcasting rights restriction',
+      labelReferrers: 'Referrers (domains, comma separated)',
+      phReferrers: 'E.g.: facebook.com, twitter.com',
+      referrersHelp: 'If filled, the block also checks the HTTP referrer of the request.',
       labelAltStreamUrl: 'Alternative stream URL (optional)',
       phAltStreamUrl: 'https://example.com/alternative/playlist.m3u8',
       altStreamHelp: 'If filled, this alternative stream is shown during program blocking instead of fully blocking playback.',
@@ -104,6 +110,9 @@
       phCities: 'Ej.: nueva york, miami',
       labelReason: 'Motivo (opcional)',
       phReason: 'Ej.: restricción de derechos de transmisión',
+      labelReferrers: 'Referrers (dominios, separados por coma)',
+      phReferrers: 'Ej.: facebook.com, twitter.com',
+      referrersHelp: 'Si se completa, el bloqueo también considera el referrer HTTP de la solicitud.',
       saveBlock: 'Guardar bloqueo',
       blocksListTitle: 'Bloques registrados',
       thAttraction: 'Programa',
@@ -135,6 +144,9 @@
       phCities: 'Напр.: нью-йорк, майами',
       labelReason: 'Причина (опционально)',
       phReason: 'Напр.: ограничение на трансляцию',
+      labelReferrers: 'Реферреры (домены, через запятую)',
+      phReferrers: 'Напр.: facebook.com, twitter.com',
+      referrersHelp: 'Если заполнено, блокировка также проверяет HTTP referrer запроса.',
       saveBlock: 'Сохранить блокировку',
       blocksListTitle: 'Зарегистрированные блокировки',
       thAttraction: 'Программа',
@@ -166,6 +178,9 @@
       phCities: '例如：纽约、迈阿密',
       labelReason: '原因（可选）',
       phReason: '例如：广播权限制',
+      labelReferrers: '引荐来源（域名，用逗号分隔）',
+      phReferrers: '例如：facebook.com, twitter.com',
+      referrersHelp: '如果填写，阻止也会检查请求的HTTP引荐来源。',
       saveBlock: '保存阻止',
       blocksListTitle: '已注册的阻止',
       thAttraction: '节目',
@@ -197,6 +212,9 @@
       phCities: 'Np.: nowy jork, miami',
       labelReason: 'Przyczyna (opcjonalnie)',
       phReason: 'Np.: ograniczenie praw transmisji',
+      labelReferrers: 'Referrery (domeny, oddzielone przecinkami)',
+      phReferrers: 'Np.: facebook.com, twitter.com',
+      referrersHelp: 'Jeśli wypełniono, blokada sprawdza również HTTP referrer żądania.',
       saveBlock: 'Zapisz blokadę',
       blocksListTitle: 'Zarejestrowane blokady',
       thAttraction: 'Program',
@@ -228,6 +246,9 @@
       phCities: 'Es.: new york, miami',
       labelReason: 'Motivo (facoltativo)',
       phReason: 'Es.: restrizione dei diritti di trasmissione',
+      labelReferrers: 'Referrer (domini, separati da virgola)',
+      phReferrers: 'Es.: facebook.com, twitter.com',
+      referrersHelp: 'Se compilato, il blocco verifica anche il referrer HTTP della richiesta.',
       saveBlock: 'Salva blocco',
       blocksListTitle: 'Blocchi registrati',
       thAttraction: 'Programma',
@@ -259,6 +280,9 @@
       phCities: 'Z.B.: new york, miami',
       labelReason: 'Grund (optional)',
       phReason: 'Z.B.: Rundfunkrechte-Einschränkung',
+      labelReferrers: 'Referrer (Domains, durch Komma getrennt)',
+      phReferrers: 'Z.B.: facebook.com, twitter.com',
+      referrersHelp: 'Wenn ausgefüllt, prüft die Blockierung auch den HTTP-Referrer der Anfrage.',
       saveBlock: 'Blockierung speichern',
       blocksListTitle: 'Registrierte Blockierungen',
       thAttraction: 'Programm',
@@ -320,6 +344,8 @@
     setText('label-cities', t('labelCities'));
     setText('label-reason', t('labelReason'));
     setText('label-alt-stream-url', t('labelAltStreamUrl'));
+    setText('label-referrers', t('labelReferrers'));
+    setText('referrers-help', t('referrersHelp'));
     setText('alt-stream-help', t('altStreamHelp'));
     setText('btn-save-block', t('saveBlock'));
     setText('blocks-list-title', t('blocksListTitle'));
@@ -336,6 +362,7 @@
     form.cities.placeholder = t('phCities');
     form.reason.placeholder = t('phReason');
     form.alternativeStreamUrl.placeholder = t('phAltStreamUrl');
+    if (form.referrers) form.referrers.placeholder = t('phReferrers');
   }
 
   async function applyChannelName() {
@@ -379,6 +406,104 @@
     streamStateChannel?.postMessage({ type: 'stream-state-changed' });
   }
 
+  function normalizeAutocompleteText(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  function setDatalistOptions(listId, options) {
+    const datalist = document.getElementById(listId);
+    if (!datalist) return;
+    datalist.innerHTML = options.map((value) => `<option value="${esc(value)}"></option>`).join('');
+  }
+
+  function setupCsvAutocomplete(input, listId, baseValues) {
+    if (!input || !Array.isArray(baseValues)) return;
+
+    const refresh = () => {
+      const raw = String(input.value || '');
+      const parts = raw.split(',');
+      const fixedParts = parts.slice(0, -1).map((part) => part.trim()).filter(Boolean);
+      const currentPart = String(parts[parts.length - 1] || '').trim();
+      const currentNorm = normalizeAutocompleteText(currentPart);
+
+      const options = baseValues
+        .filter((value) => {
+          const valueNorm = normalizeAutocompleteText(value);
+          if (!valueNorm) return false;
+          if (fixedParts.some((part) => normalizeAutocompleteText(part) === valueNorm)) return false;
+          if (!currentNorm) return true;
+          return valueNorm.includes(currentNorm);
+        })
+        .slice(0, 25)
+        .map((value) => [...fixedParts, value].join(', '));
+
+      setDatalistOptions(listId, options);
+    };
+
+    input.addEventListener('focus', refresh);
+    input.addEventListener('input', refresh);
+  }
+
+  function setupPlainAutocomplete(input, listId, baseValues) {
+    if (!input || !Array.isArray(baseValues)) return;
+
+    const refresh = () => {
+      const term = normalizeAutocompleteText(input.value);
+      const options = baseValues
+        .filter((value) => {
+          const valueNorm = normalizeAutocompleteText(value);
+          if (!valueNorm) return false;
+          if (!term) return true;
+          return valueNorm.includes(term);
+        })
+        .slice(0, 25);
+      setDatalistOptions(listId, options);
+    };
+
+    input.addEventListener('focus', refresh);
+    input.addEventListener('input', refresh);
+  }
+
+  async function setupAutocomplete() {
+    try {
+      const response = await fetch('/api/admin/block-autocomplete');
+      if (!response.ok) return;
+      const data = await response.json();
+
+      setupPlainAutocomplete(
+        document.getElementById('attraction'),
+        'blocks-attraction-suggestions',
+        Array.isArray(data.attractions) ? data.attractions : []
+      );
+      setupCsvAutocomplete(
+        document.getElementById('countries'),
+        'blocks-countries-suggestions',
+        Array.isArray(data.countries) ? data.countries : []
+      );
+      setupCsvAutocomplete(
+        document.getElementById('states'),
+        'blocks-states-suggestions',
+        Array.isArray(data.states) ? data.states : []
+      );
+      setupCsvAutocomplete(
+        document.getElementById('cities'),
+        'blocks-cities-suggestions',
+        Array.isArray(data.cities) ? data.cities : []
+      );
+      setupCsvAutocomplete(
+        document.getElementById('referrers'),
+        'blocks-referrers-suggestions',
+        Array.isArray(data.referrers) ? data.referrers : []
+      );
+    } catch (_) {
+      // Sem autocomplete em caso de erro de rede/API.
+    }
+  }
+
   async function loadBlocks() {
     const response = await fetch('/api/blocks');
     const blocks = await response.json();
@@ -396,6 +521,9 @@
     body.innerHTML = blocks.map((block) => {
       const mode = block.mode === 'whitelist' ? 'whitelist' : 'blacklist';
       const modeLabel = mode === 'whitelist' ? t('whitelist') : t('blacklist');
+      const referrersLine = Array.isArray(block.referrers) && block.referrers.length
+        ? `<div class="muted">Referrers: ${esc(block.referrers.join(', '))}</div>`
+        : '';
       const altStreamLine = block.alternativeStreamUrl
         ? `<div class="muted">${esc(t('altStreamLabel'))}: ${esc(block.alternativeStreamUrl)}</div>`
         : '';
@@ -404,7 +532,7 @@
         <tr>
           <td><span class="badge-mode badge-${esc(mode)}">${esc(modeLabel)}</span></td>
           <td>${esc(block.attraction)}</td>
-          <td>${esc(prettyRegion(block))}</td>
+          <td>${esc(prettyRegion(block))}${referrersLine}</td>
           <td>${esc(block.reason || '-')}${altStreamLine}</td>
           <td>
             <button class="btn-danger" data-id="${esc(block.id)}">${esc(t('delete'))}</button>
@@ -423,6 +551,7 @@
       countries: form.countries.value,
       states: form.states.value,
       cities: form.cities.value,
+      referrers: form.referrers ? form.referrers.value : '',
       reason: form.reason.value,
       alternativeStreamUrl: form.alternativeStreamUrl.value,
     };
@@ -468,6 +597,7 @@
 
   applyStaticTranslations();
   applyChannelName();
+  setupAutocomplete();
   loadBlocks().catch(err => {
     console.error('[BLOCKS] Falha ao carregar bloqueios:', err);
     window.alert(t('loadError'));

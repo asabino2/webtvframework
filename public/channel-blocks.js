@@ -55,6 +55,9 @@
       deleteError: 'Nao foi possivel excluir o bloqueio.',
       saveError: 'Nao foi possivel salvar o bloqueio.',
       targetRequired: 'Selecione pelo menos um alvo (site, stream ou embed).',
+      labelReferrers: 'Referrers (domínios, separados por vírgula)',
+      phReferrers: 'Ex.: facebook.com, twitter.com',
+      referrersHelp: 'Se preenchido, o bloqueio também considera o referrer HTTP da requisição.',
       loadError: 'Erro ao carregar os bloqueios.'
     },
     en: {
@@ -101,6 +104,9 @@
       deleteError: 'Could not delete the block.',
       saveError: 'Could not save the block.',
       targetRequired: 'Select at least one target (site, stream or embed).',
+      labelReferrers: 'Referrers (domains, comma separated)',
+      phReferrers: 'E.g.: facebook.com, twitter.com',
+      referrersHelp: 'If filled, the block also checks the HTTP referrer of the request.',
       loadError: 'Error loading blocks.'
     },
     es: {
@@ -147,6 +153,9 @@
       deleteError: 'No se pudo eliminar el bloqueo.',
       saveError: 'No se pudo guardar el bloqueo.',
       targetRequired: 'Selecciona al menos un objetivo (sitio, stream o embed).',
+      labelReferrers: 'Referrers (dominios, separados por coma)',
+      phReferrers: 'Ej.: facebook.com, twitter.com',
+      referrersHelp: 'Si se completa, el bloqueo también considera el referrer HTTP de la solicitud.',
       loadError: 'Error al cargar bloques.'
     },
     ru: {
@@ -193,6 +202,9 @@
       deleteError: 'Не удалось удалить блокировку.',
       saveError: 'Не удалось сохранить блокировку.',
       targetRequired: 'Выберите хотя бы одну цель (сайт, поток или встраивание).',
+      labelReferrers: 'Реферреры (домены, через запятую)',
+      phReferrers: 'Напр.: facebook.com, twitter.com',
+      referrersHelp: 'Если заполнено, блокировка также проверяет HTTP referrer запроса.',
       loadError: 'Ошибка загрузки блокировок.'
     },
     zh: {
@@ -239,6 +251,9 @@
       deleteError: '无法删除阻止。',
       saveError: '无法保存阻止。',
       targetRequired: '至少选择一个目标（网站、流或嵌入）。',
+      labelReferrers: '引荐来源（域名，用逗号分隔）',
+      phReferrers: '例如：facebook.com, twitter.com',
+      referrersHelp: '如果填写，阻止也会检查请求的HTTP引荐来源。',
       loadError: '加载阻止时出错。'
     },
     pl: {
@@ -285,6 +300,9 @@
       deleteError: 'Nie można usunąć blokady.',
       saveError: 'Nie można zapisać blokady.',
       targetRequired: 'Wybierz co najmniej jeden cel (witrynę, strumień lub osadzenie).',
+      labelReferrers: 'Referrery (domeny, oddzielone przecinkami)',
+      phReferrers: 'Np.: facebook.com, twitter.com',
+      referrersHelp: 'Jeśli wypełniono, blokada sprawdza również HTTP referrer żądania.',
       loadError: 'Błąd ładowania blokad.'
     },
     it: {
@@ -331,6 +349,9 @@
       deleteError: 'Impossibile eliminare il blocco.',
       saveError: 'Impossibile salvare il blocco.',
       targetRequired: 'Seleziona almeno un obiettivo (sito, flusso o incorporamento).',
+      labelReferrers: 'Referrer (domini, separati da virgola)',
+      phReferrers: 'Es.: facebook.com, twitter.com',
+      referrersHelp: 'Se compilato, il blocco verifica anche il referrer HTTP della richiesta.',
       loadError: 'Errore durante il caricamento dei blocchi.'
     },
     de: {
@@ -377,6 +398,9 @@
       deleteError: 'Blockierung konnte nicht gelöscht werden.',
       saveError: 'Blockierung konnte nicht gespeichert werden.',
       targetRequired: 'Wählen Sie mindestens ein Ziel (Website, Stream oder Einbettung).',
+      labelReferrers: 'Referrer (Domains, durch Komma getrennt)',
+      phReferrers: 'Z.B.: facebook.com, twitter.com',
+      referrersHelp: 'Wenn ausgefüllt, prüft die Blockierung auch den HTTP-Referrer der Anfrage.',
       loadError: 'Fehler beim Laden von Blockierungen.'
     }
   };
@@ -427,6 +451,8 @@
     setText('label-countries', t('labelCountries'));
     setText('label-states', t('labelStates'));
     setText('label-cities', t('labelCities'));
+    setText('label-referrers', t('labelReferrers'));
+    setText('cb-referrers-help', t('referrersHelp'));
     setText('label-reason', t('labelReason'));
     setText('btn-save-cb', t('saveBlock'));
     setText('cb-list-title', t('listTitle'));
@@ -441,6 +467,7 @@
     setAttr('cb-countries', 'placeholder', t('phCountries'));
     setAttr('cb-states', 'placeholder', t('phStates'));
     setAttr('cb-cities', 'placeholder', t('phCities'));
+    setAttr('cb-referrers', 'placeholder', t('phReferrers'));
     setAttr('cb-reason', 'placeholder', t('phReason'));
 
     updateModeHint();
@@ -493,6 +520,79 @@
     return targetId;
   }
 
+  function normalizeAutocompleteText(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  function setDatalistOptions(listId, options) {
+    const datalist = document.getElementById(listId);
+    if (!datalist) return;
+    datalist.innerHTML = options.map((value) => `<option value="${esc(value)}"></option>`).join('');
+  }
+
+  function setupCsvAutocomplete(input, listId, baseValues) {
+    if (!input || !Array.isArray(baseValues)) return;
+
+    const refresh = () => {
+      const raw = String(input.value || '');
+      const parts = raw.split(',');
+      const fixedParts = parts.slice(0, -1).map((part) => part.trim()).filter(Boolean);
+      const currentPart = String(parts[parts.length - 1] || '').trim();
+      const currentNorm = normalizeAutocompleteText(currentPart);
+
+      const options = baseValues
+        .filter((value) => {
+          const valueNorm = normalizeAutocompleteText(value);
+          if (!valueNorm) return false;
+          if (fixedParts.some((part) => normalizeAutocompleteText(part) === valueNorm)) return false;
+          if (!currentNorm) return true;
+          return valueNorm.includes(currentNorm);
+        })
+        .slice(0, 25)
+        .map((value) => [...fixedParts, value].join(', '));
+
+      setDatalistOptions(listId, options);
+    };
+
+    input.addEventListener('focus', refresh);
+    input.addEventListener('input', refresh);
+  }
+
+  async function setupAutocomplete() {
+    try {
+      const response = await fetch('/api/admin/block-autocomplete');
+      if (!response.ok) return;
+      const data = await response.json();
+
+      setupCsvAutocomplete(
+        document.getElementById('cb-countries'),
+        'cb-countries-suggestions',
+        Array.isArray(data.countries) ? data.countries : []
+      );
+      setupCsvAutocomplete(
+        document.getElementById('cb-states'),
+        'cb-states-suggestions',
+        Array.isArray(data.states) ? data.states : []
+      );
+      setupCsvAutocomplete(
+        document.getElementById('cb-cities'),
+        'cb-cities-suggestions',
+        Array.isArray(data.cities) ? data.cities : []
+      );
+      setupCsvAutocomplete(
+        document.getElementById('cb-referrers'),
+        'cb-referrers-suggestions',
+        Array.isArray(data.referrers) ? data.referrers : []
+      );
+    } catch (_) {
+      // Sem autocomplete em caso de erro de rede/API.
+    }
+  }
+
   function renderBlocks(blocks) {
     if (!blocks.length) {
       empty.style.display = 'block';
@@ -510,13 +610,16 @@
         .map((tgt) => `<span class="badge-target">${esc(targetLabel(tgt))}</span>`)
         .join('');
       const region = esc(prettyRegion(block));
+      const referrersLine = Array.isArray(block.referrers) && block.referrers.length
+        ? `<div class="muted">Referrers: ${esc(block.referrers.join(', '))}</div>`
+        : '';
       const reason = esc(block.reason || '—');
       const isActive = block.active !== false;
 
       return `<tr data-id="${esc(block.id)}">
         <td><span class="badge-mode ${modeClass}">${esc(modeLabel)}</span></td>
         <td>${targetsHtml || '—'}</td>
-        <td class="muted">${region}</td>
+        <td class="muted">${region}${referrersLine}</td>
         <td class="muted">${reason}</td>
         <td>
           <label class="toggle-active" title="${esc(t('toggleActive'))}">
@@ -593,6 +696,7 @@
       countries: document.getElementById('cb-countries').value,
       states: document.getElementById('cb-states').value,
       cities: document.getElementById('cb-cities').value,
+      referrers: document.getElementById('cb-referrers')?.value || '',
       reason: document.getElementById('cb-reason').value,
       active: true,
     };
@@ -625,5 +729,6 @@
 
   applyStaticTranslations();
   applyChannelName();
+  setupAutocomplete();
   loadBlocks();
 })();

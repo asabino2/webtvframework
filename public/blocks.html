@@ -176,22 +176,33 @@
 
         <div class="field full">
           <label for="attraction" id="label-attraction">Atracao (trecho do titulo no EPG)</label>
-          <input id="attraction" name="attraction" type="text" required placeholder="Ex.: Campeonato" />
+          <input id="attraction" name="attraction" type="text" required placeholder="Ex.: Campeonato" list="blocks-attraction-suggestions" autocomplete="off" />
+          <datalist id="blocks-attraction-suggestions"></datalist>
         </div>
 
         <div class="field">
           <label for="countries" id="label-countries">Paises (separados por virgula)</label>
-          <input id="countries" name="countries" type="text" placeholder="Ex.: brasil, argentina" />
+          <input id="countries" name="countries" type="text" placeholder="Ex.: brasil, argentina" list="blocks-countries-suggestions" autocomplete="off" />
+          <datalist id="blocks-countries-suggestions"></datalist>
         </div>
 
         <div class="field">
           <label for="states" id="label-states">Estados (separados por virgula)</label>
-          <input id="states" name="states" type="text" placeholder="Ex.: sao paulo, rio de janeiro" />
+          <input id="states" name="states" type="text" placeholder="Ex.: sao paulo, rio de janeiro" list="blocks-states-suggestions" autocomplete="off" />
+          <datalist id="blocks-states-suggestions"></datalist>
         </div>
 
         <div class="field full">
           <label for="cities" id="label-cities">Cidades (separadas por virgula)</label>
-          <input id="cities" name="cities" type="text" placeholder="Ex.: campinas, sorocaba" />
+          <input id="cities" name="cities" type="text" placeholder="Ex.: campinas, sorocaba" list="blocks-cities-suggestions" autocomplete="off" />
+          <datalist id="blocks-cities-suggestions"></datalist>
+        </div>
+
+        <div class="field full">
+          <label for="referrers" id="label-referrers">Referrers (domínios, separados por vírgula)</label>
+          <input id="referrers" name="referrers" type="text" placeholder="Ex.: facebook.com, twitter.com" list="blocks-referrers-suggestions" autocomplete="off" />
+          <datalist id="blocks-referrers-suggestions"></datalist>
+          <p class="muted" id="referrers-help">Se preenchido, o bloqueio também considera o referrer HTTP da requisição.</p>
         </div>
 
         <div class="field full">

@@ -6,12 +6,12 @@ Interface web para streaming ao vivo com EPG, analytics, embed e painel administ
 
 </div>
 
-[![Version](https://img.shields.io/badge/version-2.2.0-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
+[![Version](https://img.shields.io/badge/version-2.2.1-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 [![Node.js](https://img.shields.io/badge/node.js-18%2B-339933?logo=nodedotjs&logoColor=white&style=for-the-badge)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/status-active-2ea44f?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 
-Versão atual: **2.2.0**
+Versão atual: **2.2.1**
 
 ## 📺 Visão geral
 
@@ -149,6 +149,14 @@ webtvframework/
 - Personalização de tema, fonte, cores e controles do player
 
 ## 📝 Changelog recente
+
+### 2.2.1
+
+- Painel administrativo agora usa favicon fixo do framework (`/webtvframework.ico`), independente do favicon configurado para a home
+- Bloqueio por atração e bloqueio de canal agora suportam regra adicional por **referrer** (domínios separados por vírgula)
+- Nova API administrativa `GET /api/admin/block-autocomplete` para sugestões de autocomplete nos formulários de bloqueio
+- Autocomplete adicionado nos campos de país, estado, cidade e referrer nas telas de bloqueio de atração e de canal
+- Autocomplete de nome da atração adicionado na tela de bloqueio por atração, usando dados locais e títulos do EPG quando disponíveis
 
 ### 2.2.0
 

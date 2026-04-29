@@ -258,17 +258,27 @@
 
         <div class="field">
           <label for="cb-countries" id="label-countries">Paises (separados por virgula)</label>
-          <input id="cb-countries" name="countries" type="text" placeholder="Ex.: brasil, argentina" />
+          <input id="cb-countries" name="countries" type="text" placeholder="Ex.: brasil, argentina" list="cb-countries-suggestions" autocomplete="off" />
+          <datalist id="cb-countries-suggestions"></datalist>
         </div>
 
         <div class="field">
           <label for="cb-states" id="label-states">Estados (separados por virgula)</label>
-          <input id="cb-states" name="states" type="text" placeholder="Ex.: sao paulo, minas gerais" />
+          <input id="cb-states" name="states" type="text" placeholder="Ex.: sao paulo, minas gerais" list="cb-states-suggestions" autocomplete="off" />
+          <datalist id="cb-states-suggestions"></datalist>
         </div>
 
         <div class="field full">
           <label for="cb-cities" id="label-cities">Cidades (separadas por virgula)</label>
-          <input id="cb-cities" name="cities" type="text" placeholder="Ex.: campinas, sorocaba" />
+          <input id="cb-cities" name="cities" type="text" placeholder="Ex.: campinas, sorocaba" list="cb-cities-suggestions" autocomplete="off" />
+          <datalist id="cb-cities-suggestions"></datalist>
+        </div>
+
+        <div class="field full">
+          <label for="cb-referrers" id="label-referrers">Referrers (domínios, separados por vírgula)</label>
+          <input id="cb-referrers" name="referrers" type="text" placeholder="Ex.: facebook.com, twitter.com" list="cb-referrers-suggestions" autocomplete="off" />
+          <datalist id="cb-referrers-suggestions"></datalist>
+          <p class="muted" id="cb-referrers-help">Se preenchido, o bloqueio também considera o referrer HTTP da requisição.</p>
         </div>
 
         <div class="field full">
