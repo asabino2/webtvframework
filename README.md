@@ -6,7 +6,7 @@ Interface web para streaming ao vivo com EPG, analytics, embed e painel administ
 
 </div>
 
-[![Version](https://img.shields.io/badge/version-2.2.1-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
+[![Version](https://img.shields.io/badge/version-2.2.2-informational?style=for-the-badge)](https://github.com/asabino2/webtvframework)
 [![Node.js](https://img.shields.io/badge/node.js-18%2B-339933?logo=nodedotjs&logoColor=white&style=for-the-badge)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com/)
 [![Status](https://img.shields.io/badge/status-active-2ea44f?style=for-the-badge)](https://github.com/asabino2/webtvframework)
@@ -149,6 +149,16 @@ webtvframework/
 - Personalização de tema, fonte, cores e controles do player
 
 ## 📝 Changelog recente
+
+### 2.2.2
+
+- Estatísticas agora exibem dados filtrados por intervalo de datas definido pelo usuário no topo da página
+- Filtro de data inicial e final (campos `datetime-local`) adicionado na página `/estatisticas` acima dos cards de métricas
+- Atalhos de intervalo rápido: Últimas 24h, Últimos 7 dias, Últimos 30 dias, Últimos 90 dias, Últimos 365 dias
+- Intervalo selecionado afeta: card de visitas, card de IPs únicos, gráfico por hora, rankings de navegadores/SO/países/cidades/ISPs/referrers, visitas recentes e programas mais vistos
+- Rótulo do card de visitas exibe dinamicamente a unidade de tempo: horas (≤ 24h) ou dias (> 24h) conforme o intervalo
+- Subtítulo do gráfico por hora reflete o mesmo período selecionado no filtro
+- Padrão de carregamento inicial da página mantido em Últimas 24h
 
 ### 2.2.1
 

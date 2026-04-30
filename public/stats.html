@@ -14,6 +14,27 @@
       <p class="stats-subtitle" id="stats-subtitle">Visao em tempo real da audiencia, distribuicao de acessos e visitas recentes.</p>
     </section>
 
+    <section class="panel-card stats-filter-toolbar">
+      <div class="stats-filter-grid">
+        <label class="field-group" for="stats-filter-from">
+          <span id="stats-filter-from-label">Data inicial</span>
+          <input id="stats-filter-from" type="datetime-local" />
+        </label>
+        <label class="field-group" for="stats-filter-to">
+          <span id="stats-filter-to-label">Data final</span>
+          <input id="stats-filter-to" type="datetime-local" />
+        </label>
+      </div>
+      <div class="search-actions">
+        <button class="panel-link-btn search-action-primary" type="button" id="stats-filter-apply">Aplicar intervalo</button>
+        <button class="panel-link-btn search-action-secondary" type="button" id="stats-filter-reset">Ultimas 24h</button>
+        <button class="panel-link-btn search-action-secondary" type="button" id="stats-filter-last-7d">Ultimos 7 dias</button>
+        <button class="panel-link-btn search-action-secondary" type="button" id="stats-filter-last-30d">Ultimos 30 dias</button>
+        <button class="panel-link-btn search-action-secondary" type="button" id="stats-filter-last-90d">Ultimos 90 dias</button>
+        <button class="panel-link-btn search-action-secondary" type="button" id="stats-filter-last-365d">Ultimos 365 dias</button>
+      </div>
+    </section>
+
     <section class="stats-grid stats-grid-top">
       <article class="metric-card emphasis">
         <span class="metric-label" id="metric-label-current">Assistindo agora</span>

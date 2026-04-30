@@ -14,11 +14,20 @@
   const topCities = document.getElementById('top-cities');
   const topReferrers = document.getElementById('top-referrers');
   const topIsps = document.getElementById('top-isps');
+  const filterFromInput = document.getElementById('stats-filter-from');
+  const filterToInput = document.getElementById('stats-filter-to');
+  const filterApplyButton = document.getElementById('stats-filter-apply');
+  const filterResetButton = document.getElementById('stats-filter-reset');
+  const filterLast7DaysButton = document.getElementById('stats-filter-last-7d');
+  const filterLast30DaysButton = document.getElementById('stats-filter-last-30d');
+  const filterLast90DaysButton = document.getElementById('stats-filter-last-90d');
+  const filterLast365DaysButton = document.getElementById('stats-filter-last-365d');
   const visitorDetailOverlay = document.getElementById('visitor-detail-overlay');
   const visitorDetailClose = document.getElementById('visitor-detail-close');
   const visitorDetailBody = document.getElementById('visitor-detail-body');
   const PIE_COLORS = ['#f4b338', '#38d9a9', '#4dabf7', '#b197fc', '#ff8787', '#ffa94d', '#94d82d', '#66d9e8'];
   let recentVisitsBySession = new Map();
+  let activeRange = null;
 
   const LANG_KEY = 'webtv_lang';
   const i18n = {
@@ -29,13 +38,15 @@
       subtitle: 'Visao em tempo real da audiencia, distribuicao de acessos e visitas recentes.',
       metricCurrent: 'Assistindo agora',
       metricTotal: 'Visitas totais',
-      metric24h: 'Visitas nas ultimas 24h',
-      metricIps: 'IPs unicos nas ultimas 24h',
+      metric24h: 'Visitas no intervalo',
+      metric24hHours: 'Visitas nas ultimas {hours}h',
+      metric24hDays: 'Visitas nos ultimos {days} dias',
+      metricIps: 'IPs unicos no intervalo',
       footTotal: 'Desde o inicio do log',
-      foot24h: 'Janela movel',
+      foot24h: 'Intervalo selecionado',
       footIps: 'Dispositivos / origens',
       panelHourly: 'Entradas por hora',
-      panelHourlySub: 'Ultimas 24 horas',
+      panelHourlySub: 'Distribuicao no intervalo',
       panelBrowsers: 'Navegador/App',
       panelTopAccess: 'Top acessos',
       panelOs: 'Sistemas operacionais',
@@ -92,6 +103,15 @@
       thProgViews: 'Visualizações',
       thProgWatchTime: 'Tempo total',
       noPrograms: 'Ainda sem dados de programas.'
+      ,
+      filterFrom: 'Data inicial',
+      filterTo: 'Data final',
+      filterApply: 'Aplicar intervalo',
+      filterReset: 'Ultimas 24h',
+      filterLast7Days: 'Ultimos 7 dias',
+      filterLast30Days: 'Ultimos 30 dias',
+      filterLast90Days: 'Ultimos 90 dias',
+      filterLast365Days: 'Ultimos 365 dias'
     },
     en: {
       titleStats: 'Statistics',
@@ -100,13 +120,15 @@
       subtitle: 'Real-time audience view, access distribution, and recent visits.',
       metricCurrent: 'Watching now',
       metricTotal: 'Total visits',
-      metric24h: 'Visits in last 24h',
-      metricIps: 'Unique IPs in last 24h',
+      metric24h: 'Visits in range',
+      metric24hHours: 'Visits in last {hours}h',
+      metric24hDays: 'Visits in last {days} days',
+      metricIps: 'Unique IPs in range',
       footTotal: 'Since logging started',
-      foot24h: 'Rolling window',
+      foot24h: 'Selected range',
       footIps: 'Devices / origins',
       panelHourly: 'Visits by hour',
-      panelHourlySub: 'Last 24 hours',
+      panelHourlySub: 'Range distribution',
       panelBrowsers: 'Browser/App',
       panelTopAccess: 'Top access',
       panelOs: 'Operating systems',
@@ -162,7 +184,15 @@
       thProgTitle: 'Program',
       thProgViews: 'Views',
       thProgWatchTime: 'Total watch time',
-      noPrograms: 'No program data yet.'
+      noPrograms: 'No program data yet.',
+      filterFrom: 'Start date',
+      filterTo: 'End date',
+      filterApply: 'Apply range',
+      filterReset: 'Last 24h',
+      filterLast7Days: 'Last 7 days',
+      filterLast30Days: 'Last 30 days',
+      filterLast90Days: 'Last 90 days',
+      filterLast365Days: 'Last 365 days'
     },
     es: {
       titleStats: 'Estadísticas',
@@ -668,6 +698,14 @@
     setText('th-prog-title', t('thProgTitle'));
     setText('th-prog-views', t('thProgViews'));
     setText('th-prog-watch-time', t('thProgWatchTime'));
+    setText('stats-filter-from-label', t('filterFrom'));
+    setText('stats-filter-to-label', t('filterTo'));
+    setText('stats-filter-apply', t('filterApply'));
+    setText('stats-filter-reset', t('filterReset'));
+    setText('stats-filter-last-7d', t('filterLast7Days'));
+    setText('stats-filter-last-30d', t('filterLast30Days'));
+    setText('stats-filter-last-90d', t('filterLast90Days'));
+    setText('stats-filter-last-365d', t('filterLast365Days'));
 
     if (updatedAt && !updatedAt.textContent) {
       updatedAt.textContent = t('updating');
@@ -892,8 +930,89 @@
       .replace(/"/g, '&quot;');
   }
 
+  function toDateTimeLocalValue(date) {
+    const pad = (value) => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function parseDateTimeInput(value) {
+    const normalized = String(value || '').trim();
+    if (!normalized) return null;
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+  }
+
+  function buildRangeHoursLabel(range) {
+    if (!range?.from || !range?.to) return t('metric24h');
+    const diffMs = Math.max(0, range.to.getTime() - range.from.getTime());
+    const hours = Math.max(1, Math.ceil(diffMs / (60 * 60 * 1000)));
+    if (hours <= 24) {
+      return String(t('metric24hHours') || t('metric24h')).replace('{hours}', String(hours));
+    }
+    const days = Math.max(1, Math.ceil(hours / 24));
+    return String(t('metric24hDays') || t('metric24h')).replace('{days}', String(days));
+  }
+
+  function buildRangeHoursValue(range) {
+    if (!range?.from || !range?.to) return 24;
+    const diffMs = Math.max(0, range.to.getTime() - range.from.getTime());
+    return Math.max(1, Math.ceil(diffMs / (60 * 60 * 1000)));
+  }
+
+  function setRangeDefaultsLast24Hours() {
+    const now = new Date();
+    const from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    if (filterFromInput) filterFromInput.value = toDateTimeLocalValue(from);
+    if (filterToInput) filterToInput.value = toDateTimeLocalValue(now);
+  }
+
+  function setRangeFromLastDays(days) {
+    const safeDays = Math.max(1, Number(days) || 1);
+    const now = new Date();
+    const from = new Date(now.getTime() - safeDays * 24 * 60 * 60 * 1000);
+    if (filterFromInput) filterFromInput.value = toDateTimeLocalValue(from);
+    if (filterToInput) filterToInput.value = toDateTimeLocalValue(now);
+  }
+
+  function readActiveRangeFromInputs() {
+    const from = parseDateTimeInput(filterFromInput?.value);
+    const to = parseDateTimeInput(filterToInput?.value);
+    if (!from || !to) return null;
+    if (from.getTime() <= to.getTime()) return { from, to };
+    return { from: to, to: from };
+  }
+
+  function updateRangeMetricLabel(range) {
+    const metricLabel24h = document.getElementById('metric-label-24h');
+    if (!metricLabel24h) return;
+    metricLabel24h.textContent = buildRangeHoursLabel(range);
+
+    const hourlySubtitle = document.getElementById('panel-hourly-subtitle');
+    if (hourlySubtitle) {
+      const hours = buildRangeHoursValue(range);
+      hourlySubtitle.textContent = `${hours}h`;
+    }
+  }
+
+  function buildSummaryUrl(range) {
+    const params = new URLSearchParams();
+    if (range?.from) {
+      params.set('fromDate', range.from.toISOString());
+    }
+    if (range?.to) {
+      params.set('toDate', range.to.toISOString());
+    }
+    const query = params.toString();
+    return query ? `/api/analytics/summary?${query}` : '/api/analytics/summary';
+  }
+
   async function loadSummary() {
-    const response = await fetch('/api/analytics/summary');
+    const range = readActiveRangeFromInputs();
+    activeRange = range;
+    updateRangeMetricLabel(range);
+
+    const response = await fetch(buildSummaryUrl(range));
     const data = await response.json();
 
     currentViewers.textContent = data.currentViewers;
@@ -915,7 +1034,44 @@
 
   applyStaticTranslations();
   applyChannelName();
+  setRangeDefaultsLast24Hours();
+  updateRangeMetricLabel(readActiveRangeFromInputs());
   closeVisitorDetail();
+  if (filterApplyButton) {
+    filterApplyButton.addEventListener('click', () => {
+      loadSummary().catch(console.error);
+    });
+  }
+  if (filterResetButton) {
+    filterResetButton.addEventListener('click', () => {
+      setRangeDefaultsLast24Hours();
+      loadSummary().catch(console.error);
+    });
+  }
+  if (filterLast7DaysButton) {
+    filterLast7DaysButton.addEventListener('click', () => {
+      setRangeFromLastDays(7);
+      loadSummary().catch(console.error);
+    });
+  }
+  if (filterLast30DaysButton) {
+    filterLast30DaysButton.addEventListener('click', () => {
+      setRangeFromLastDays(30);
+      loadSummary().catch(console.error);
+    });
+  }
+  if (filterLast90DaysButton) {
+    filterLast90DaysButton.addEventListener('click', () => {
+      setRangeFromLastDays(90);
+      loadSummary().catch(console.error);
+    });
+  }
+  if (filterLast365DaysButton) {
+    filterLast365DaysButton.addEventListener('click', () => {
+      setRangeFromLastDays(365);
+      loadSummary().catch(console.error);
+    });
+  }
   if (visitorDetailClose) {
     visitorDetailClose.addEventListener('click', closeVisitorDetail);
   }

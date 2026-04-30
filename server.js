@@ -1558,22 +1558,15 @@ function summarizeCounts(items, key, limit = 6) {
 }
 
 function buildHourlySeries(items) {
-  const now = new Date();
-  const labels = [];
-  const values = [];
+  const labels = Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, '0')}:00`);
+  const values = new Array(24).fill(0);
 
-  for (let offset = 23; offset >= 0; offset -= 1) {
-    const slot = new Date(now.getTime() - offset * 60 * 60 * 1000);
-    const label = slot.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const start = new Date(slot);
-    start.setMinutes(0, 0, 0);
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const count = items.filter(item => {
-      const date = new Date(item.visitedAt);
-      return date >= start && date < end;
-    }).length;
-    labels.push(label);
-    values.push(count);
+  for (const item of items) {
+    const date = new Date(item?.visitedAt);
+    if (Number.isNaN(date.getTime())) {
+      continue;
+    }
+    values[date.getHours()] += 1;
   }
 
   return { labels, values };
@@ -1613,6 +1606,14 @@ function parseDateEnd(value) {
   const normalized = String(value || '').trim();
   if (!normalized) return null;
   const date = new Date(`${normalized}T23:59:59.999Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+}
+
+function parseDateTimeFilter(value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return null;
+  const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString();
 }
@@ -2201,13 +2202,26 @@ app.get('/api/analytics/public-summary', async (req, res) => {
 
 app.get('/api/analytics/summary', requireAdminAuth, async (req, res) => {
   const visits = await readVisits();
-  const now = Date.now();
-  const last24Hours = visits.filter(item => now - new Date(item.visitedAt).getTime() <= 24 * 60 * 60 * 1000);
-  const recentVisits = visits.slice(-25).reverse();
-  const uniqueIps24h = new Set(last24Hours.map(item => item.ip)).size;
+  const fromIso = parseDateTimeFilter(req.query.fromDate);
+  const toIso = parseDateTimeFilter(req.query.toDate);
+  const fromMs = fromIso ? new Date(fromIso).getTime() : null;
+  const toMs = toIso ? new Date(toIso).getTime() : null;
+  const rangeStartMs = fromMs != null && toMs != null ? Math.min(fromMs, toMs) : fromMs;
+  const rangeEndMs = fromMs != null && toMs != null ? Math.max(fromMs, toMs) : toMs;
+
+  const visitsInRange = visits.filter((item) => {
+    const visitedAtMs = new Date(item.visitedAt).getTime();
+    if (Number.isNaN(visitedAtMs)) return false;
+    if (rangeStartMs != null && visitedAtMs < rangeStartMs) return false;
+    if (rangeEndMs != null && visitedAtMs > rangeEndMs) return false;
+    return true;
+  });
+
+  const recentVisits = visitsInRange.slice(-25).reverse();
+  const uniqueIpsInRange = new Set(visitsInRange.map((item) => item.ip).filter(Boolean)).size;
 
   const topReferrers = summarizeCounts(
-    last24Hours.map((item) => ({
+    visitsInRange.map((item) => ({
       ...item,
       referrerLabel: String(item.referrer || 'Direto').trim() || 'Direto',
     })),
@@ -2217,23 +2231,23 @@ app.get('/api/analytics/summary', requireAdminAuth, async (req, res) => {
   res.json({
     currentViewers: getCurrentViewerCount(),
     totalVisits: visits.length,
-    visitsLast24Hours: last24Hours.length,
-    uniqueIpsLast24Hours: uniqueIps24h,
+    visitsLast24Hours: visitsInRange.length,
+    uniqueIpsLast24Hours: uniqueIpsInRange,
     topBrowsers: summarizeCounts(
-      last24Hours.map((item) => ({
+      visitsInRange.map((item) => ({
         ...item,
         browserLabel: String(item.browserName || item.browser || 'Desconhecido').trim() || 'Desconhecido',
       })),
       'browserLabel'
     ),
-    topOperatingSystems: summarizeCounts(last24Hours, 'operatingSystem'),
-    topCountries: summarizeCounts(last24Hours, 'country'),
-    topCities: summarizeCounts(last24Hours, 'city'),
-    topIsps: summarizeCounts(last24Hours, 'isp'),
+    topOperatingSystems: summarizeCounts(visitsInRange, 'operatingSystem'),
+    topCountries: summarizeCounts(visitsInRange, 'country'),
+    topCities: summarizeCounts(visitsInRange, 'city'),
+    topIsps: summarizeCounts(visitsInRange, 'isp'),
     topReferrers,
-    hourlyVisits: buildHourlySeries(last24Hours),
+    hourlyVisits: buildHourlySeries(visitsInRange),
     recentVisits,
-    topPrograms: buildTopPrograms(visits),
+    topPrograms: buildTopPrograms(visitsInRange),
   });
 });
 
